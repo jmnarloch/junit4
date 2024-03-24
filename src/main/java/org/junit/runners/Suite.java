@@ -29,11 +29,7 @@ public class Suite extends ParentRunner<Runner> {
      * Returns an empty suite.
      */
     public static Runner emptySuite() {
-        try {
-            return new Suite((Class<?>) null, new Class<?>[0]);
-        } catch (InitializationError e) {
-            throw new RuntimeException("This shouldn't be possible");
-        }
+        
     }
 
     /**
@@ -51,11 +47,7 @@ public class Suite extends ParentRunner<Runner> {
     }
 
     private static Class<?>[] getAnnotatedClasses(Class<?> klass) throws InitializationError {
-        SuiteClasses annotation = klass.getAnnotation(SuiteClasses.class);
-        if (annotation == null) {
-            throw new InitializationError(String.format("class '%s' must have a SuiteClasses annotation", klass.getName()));
-        }
-        return annotation.value();
+        
     }
 
     private final List<Runner> runners;
@@ -67,7 +59,7 @@ public class Suite extends ParentRunner<Runner> {
      * @param builder builds runners for classes in the suite
      */
     public Suite(Class<?> klass, RunnerBuilder builder) throws InitializationError {
-        this(builder, klass, getAnnotatedClasses(klass));
+        
     }
 
     /**
@@ -78,7 +70,7 @@ public class Suite extends ParentRunner<Runner> {
      * @param classes the classes in the suite
      */
     public Suite(RunnerBuilder builder, Class<?>[] classes) throws InitializationError {
-        this(null, builder.runners(null, classes));
+        
     }
 
     /**
@@ -88,7 +80,7 @@ public class Suite extends ParentRunner<Runner> {
      * @param suiteClasses the classes in the suite
      */
     protected Suite(Class<?> klass, Class<?>[] suiteClasses) throws InitializationError {
-        this(new AllDefaultPossibilitiesBuilder(), klass, suiteClasses);
+        
     }
 
     /**
@@ -99,7 +91,7 @@ public class Suite extends ParentRunner<Runner> {
      * @param suiteClasses the classes in the suite
      */
     protected Suite(RunnerBuilder builder, Class<?> klass, Class<?>[] suiteClasses) throws InitializationError {
-        this(klass, builder.runners(klass, suiteClasses));
+        
     }
 
     /**
@@ -109,22 +101,21 @@ public class Suite extends ParentRunner<Runner> {
      * @param runners for each class in the suite, a {@link Runner}
      */
     protected Suite(Class<?> klass, List<Runner> runners) throws InitializationError {
-        super(klass);
-        this.runners = Collections.unmodifiableList(runners);
+        
     }
 
     @Override
     protected List<Runner> getChildren() {
-        return runners;
+        
     }
 
     @Override
     protected Description describeChild(Runner child) {
-        return child.getDescription();
+        
     }
 
     @Override
     protected void runChild(Runner runner, final RunNotifier notifier) {
-        runner.run(notifier);
+        
     }
 }

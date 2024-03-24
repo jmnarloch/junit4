@@ -40,21 +40,20 @@ public class Assume {
      * @deprecated since 4.13.
      */
     @Deprecated
-    public Assume() {
-    }
+    public Assume() { }
 
     /**
      * If called with an expression evaluating to {@code false}, the test will halt and be ignored.
      */
     public static void assumeTrue(boolean b) {
-        assumeThat(b, is(true));
+        
     }
 
     /**
      * The inverse of {@link #assumeTrue(boolean)}.
      */
     public static void assumeFalse(boolean b) {
-        assumeThat(b, is(false));
+        
     }
 
     /**
@@ -65,14 +64,14 @@ public class Assume {
      * @param message A message to pass to {@link AssumptionViolatedException}.
      */
     public static void assumeTrue(String message, boolean b) {
-        if (!b) throw new AssumptionViolatedException(message);
+        
     }
 
     /**
      * The inverse of {@link #assumeTrue(String, boolean)}.
      */
     public static void assumeFalse(String message, boolean b) {
-        assumeTrue(message, !b);
+        
     }
 
     /**
@@ -80,8 +79,7 @@ public class Assume {
      * the test will halt and be ignored.
      */
     public static void assumeNotNull(Object... objects) {
-        assumeThat(objects, notNullValue());
-        assumeThat(asList(objects), everyItem(notNullValue()));
+        
     }
 
     /**
@@ -102,9 +100,7 @@ public class Assume {
      * @see org.junit.matchers.JUnitMatchers
      */
     public static <T> void assumeThat(T actual, Matcher<T> matcher) {
-        if (!matcher.matches(actual)) {
-            throw new AssumptionViolatedException(actual, matcher);
-        }
+        
     }
 
     /**
@@ -125,9 +121,7 @@ public class Assume {
      * @see org.junit.matchers.JUnitMatchers
      */
     public static <T> void assumeThat(String message, T actual, Matcher<T> matcher) {
-        if (!matcher.matches(actual)) {
-            throw new AssumptionViolatedException(message, actual, matcher);
-        }
+        
     }
 
     /**
@@ -150,7 +144,7 @@ public class Assume {
      * @param e if non-null, the offending exception
      */
     public static void assumeNoException(Throwable e) {
-        assumeThat(e, nullValue());
+        
     }
 
     /**
@@ -164,6 +158,6 @@ public class Assume {
      * @see #assumeNoException(Throwable)
      */
     public static void assumeNoException(String message, Throwable e) {
-        assumeThat(message, e, nullValue());
+        
     }
 }

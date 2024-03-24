@@ -10,6 +10,6 @@ public class CouldNotReadCoreException extends Exception {
      * Constructs
      */
     public CouldNotReadCoreException(Throwable e) {
-        super(e);
+        
     }
 }

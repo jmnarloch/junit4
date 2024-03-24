@@ -33,67 +33,54 @@ public class JUnit4TestAdapter implements Test, Filterable, Orderable, Describab
     private final JUnit4TestAdapterCache fCache;
 
     public JUnit4TestAdapter(Class<?> newTestClass) {
-        this(newTestClass, JUnit4TestAdapterCache.getDefault());
+        
     }
 
     public JUnit4TestAdapter(final Class<?> newTestClass, JUnit4TestAdapterCache cache) {
-        fCache = cache;
-        fNewTestClass = newTestClass;
-        fRunner = Request.classWithoutSuiteMethod(newTestClass).getRunner();
+        
     }
 
     public int countTestCases() {
-        return fRunner.testCount();
+        
     }
 
     public void run(TestResult result) {
-        fRunner.run(fCache.getNotifier(result, this));
+        
     }
 
     // reflective interface for Eclipse
     public List<Test> getTests() {
-        return fCache.asTestList(getDescription());
+        
     }
 
     // reflective interface for Eclipse
     public Class<?> getTestClass() {
-        return fNewTestClass;
+        
     }
 
     public Description getDescription() {
-        Description description = fRunner.getDescription();
-        return removeIgnored(description);
+        
     }
 
     private Description removeIgnored(Description description) {
-        if (isIgnored(description)) {
-            return Description.EMPTY;
-        }
-        Description result = description.childlessCopy();
-        for (Description each : description.getChildren()) {
-            Description child = removeIgnored(each);
-            if (!child.isEmpty()) {
-                result.addChild(child);
-            }
-        }
-        return result;
+        
     }
 
     private boolean isIgnored(Description description) {
-        return description.getAnnotation(Ignore.class) != null;
+        
     }
 
     @Override
     public String toString() {
-        return fNewTestClass.getName();
+        
     }
 
     public void filter(Filter filter) throws NoTestsRemainException {
-        filter.apply(fRunner);
+        
     }
 
     public void sort(Sorter sorter) {
-        sorter.apply(fRunner);
+        
     }
 
     /**
@@ -102,6 +89,6 @@ public class JUnit4TestAdapter implements Test, Filterable, Orderable, Describab
      * @since 4.13
      */
     public void order(Orderer orderer) throws InvalidOrderingException {
-        orderer.apply(fRunner);
+        
     }
 }

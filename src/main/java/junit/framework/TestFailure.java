@@ -17,22 +17,21 @@ public class TestFailure {
      * Constructs a TestFailure with the given test and exception.
      */
     public TestFailure(Test failedTest, Throwable thrownException) {
-        fFailedTest = failedTest;
-        fThrownException = thrownException;
+        
     }
 
     /**
      * Gets the failed test.
      */
     public Test failedTest() {
-        return fFailedTest;
+        
     }
 
     /**
      * Gets the thrown exception.
      */
     public Throwable thrownException() {
-        return fThrownException;
+        
     }
 
     /**
@@ -40,7 +39,7 @@ public class TestFailure {
      */
     @Override
     public String toString() {
-        return fFailedTest + ": " + fThrownException.getMessage();
+        
     }
     
     /**
@@ -48,14 +47,14 @@ public class TestFailure {
      * thrown by TestFailure.
      */
     public String trace() {
-        return Throwables.getStacktrace(thrownException());
+        
     }
 
     /**
      * Returns a String containing the message from the thrown exception.
      */
     public String exceptionMessage() {
-        return thrownException().getMessage();
+        
     }
 
     /**
@@ -64,6 +63,6 @@ public class TestFailure {
      * {@code false} otherwise.
      */
     public boolean isFailure() {
-        return thrownException() instanceof AssertionFailedError;
+        
     }
 }

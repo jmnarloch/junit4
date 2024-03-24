@@ -20,23 +20,17 @@ public abstract class Filter {
      */
     public static final Filter ALL = new Filter() {
         @Override
-        public boolean shouldRun(Description description) {
-            return true;
-        }
+        public boolean shouldRun(Description description) { }
 
         @Override
-        public String describe() {
-            return "all tests";
-        }
+        public String describe() { }
 
         @Override
-        public void apply(Object child) throws NoTestsRemainException {
-            // do nothing
-        }
+        public void apply(Object child) throws NoTestsRemainException { }
 
         @Override
         public Filter intersect(Filter second) {
-            return second;
+            
         }
     };
 
@@ -45,27 +39,7 @@ public abstract class Filter {
      * {@code desiredDescription}
      */
     public static Filter matchMethodDescription(final Description desiredDescription) {
-        return new Filter() {
-            @Override
-            public boolean shouldRun(Description description) {
-                if (description.isTest()) {
-                    return desiredDescription.equals(description);
-                }
-
-                // explicitly check if any children want to run
-                for (Description each : description.getChildren()) {
-                    if (shouldRun(each)) {
-                        return true;
-                    }
-                }
-                return false;
-            }
-
-            @Override
-            public String describe() {
-                return String.format("Method %s", desiredDescription.getDisplayName());
-            }
-        };
+        
     }
 
 
@@ -90,11 +64,7 @@ public abstract class Filter {
      * @throws NoTestsRemainException if the receiver removes all tests
      */
     public void apply(Object child) throws NoTestsRemainException {
-        if (!(child instanceof Filterable)) {
-            return;
-        }
-        Filterable filterable = (Filterable) child;
-        filterable.filter(this);
+        
     }
 
     /**
@@ -102,21 +72,6 @@ public abstract class Filter {
      * by this Filter and {@code second}
      */
     public Filter intersect(final Filter second) {
-        if (second == this || second == ALL) {
-            return this;
-        }
-        final Filter first = this;
-        return new Filter() {
-            @Override
-            public boolean shouldRun(Description description) {
-                return first.shouldRun(description)
-                        && second.shouldRun(description);
-            }
-
-            @Override
-            public String describe() {
-                return first.describe() + " and " + second.describe();
-            }
-        };
+        
     }
 }

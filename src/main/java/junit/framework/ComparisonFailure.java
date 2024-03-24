@@ -20,9 +20,7 @@ public class ComparisonFailure extends AssertionFailedError {
      * @param actual the actual string value
      */
     public ComparisonFailure(String message, String expected, String actual) {
-        super(message);
-        fExpected = expected;
-        fActual = actual;
+        
     }
 
     /**
@@ -33,7 +31,7 @@ public class ComparisonFailure extends AssertionFailedError {
      */
     @Override
     public String getMessage() {
-        return new ComparisonCompactor(MAX_CONTEXT_LENGTH, fExpected, fActual).compact(super.getMessage());
+        
     }
 
     /**
@@ -42,7 +40,7 @@ public class ComparisonFailure extends AssertionFailedError {
      * @return the actual string value
      */
     public String getActual() {
-        return fActual;
+        
     }
 
     /**
@@ -51,6 +49,6 @@ public class ComparisonFailure extends AssertionFailedError {
      * @return the expected string value
      */
     public String getExpected() {
-        return fExpected;
+        
     }
 }

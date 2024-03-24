@@ -22,6 +22,6 @@ public class AllTests extends SuiteMethod {
      * Only called reflectively. Do not use programmatically.
      */
     public AllTests(Class<?> klass) throws Throwable {
-        super(klass);
+        
     }
 }

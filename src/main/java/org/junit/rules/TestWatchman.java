@@ -45,47 +45,27 @@ import org.junit.runners.model.Statement;
 public class TestWatchman implements MethodRule {
     public Statement apply(final Statement base, final FrameworkMethod method,
             Object target) {
-        return new Statement() {
-            @Override
-            public void evaluate() throws Throwable {
-                starting(method);
-                try {
-                    base.evaluate();
-                    succeeded(method);
-                } catch (AssumptionViolatedException e) {
-                    throw e;
-                } catch (Throwable e) {
-                    failed(e, method);
-                    throw e;
-                } finally {
-                    finished(method);
-                }
-            }
-        };
+        
     }
 
     /**
      * Invoked when a test method succeeds
      */
-    public void succeeded(FrameworkMethod method) {
-    }
+    public void succeeded(FrameworkMethod method) { }
 
     /**
      * Invoked when a test method fails
      */
-    public void failed(Throwable e, FrameworkMethod method) {
-    }
+    public void failed(Throwable e, FrameworkMethod method) { }
 
     /**
      * Invoked when a test method is about to start
      */
-    public void starting(FrameworkMethod method) {
-    }
+    public void starting(FrameworkMethod method) { }
 
 
     /**
      * Invoked when a test method finishes (whether passing or failing)
      */
-    public void finished(FrameworkMethod method) {
-    }
+    public void finished(FrameworkMethod method) { }
 }

@@ -27,25 +27,24 @@ class RuleContainer {
      * Sets order value for the specified rule.
      */
     public void setOrder(Object rule, int order) {
-        orderValues.put(rule, order);
+        
     }
 
     public void add(MethodRule methodRule) {
-        methodRules.add(methodRule);
+        
     }
 
     public void add(TestRule testRule) {
-        testRules.add(testRule);
+        
     }
 
     static final Comparator<RuleEntry> ENTRY_COMPARATOR = new Comparator<RuleEntry>() {
         public int compare(RuleEntry o1, RuleEntry o2) {
-            int result = compareInt(o1.order, o2.order);
-            return result != 0 ? result : o1.type - o2.type;
+            
         }
 
         private int compareInt(int a, int b) {
-            return (a < b) ? 1 : (a == b ? 0 : -1);
+            
         }
     };
 
@@ -53,16 +52,7 @@ class RuleContainer {
      * Returns entries in the order how they should be applied, i.e. inner-to-outer.
      */
     private List<RuleEntry> getSortedEntries() {
-        List<RuleEntry> ruleEntries = new ArrayList<RuleEntry>(
-                methodRules.size() + testRules.size());
-        for (MethodRule rule : methodRules) {
-            ruleEntries.add(new RuleEntry(rule, RuleEntry.TYPE_METHOD_RULE, orderValues.get(rule)));
-        }
-        for (TestRule rule : testRules) {
-            ruleEntries.add(new RuleEntry(rule, RuleEntry.TYPE_TEST_RULE, orderValues.get(rule)));
-        }
-        Collections.sort(ruleEntries, ENTRY_COMPARATOR);
-        return ruleEntries;
+        
     }
 
     /**
@@ -70,18 +60,7 @@ class RuleContainer {
      */
     public Statement apply(FrameworkMethod method, Description description, Object target,
             Statement statement) {
-        if (methodRules.isEmpty() && testRules.isEmpty()) {
-            return statement;
-        }
-        Statement result = statement;
-        for (RuleEntry ruleEntry : getSortedEntries()) {
-            if (ruleEntry.type == RuleEntry.TYPE_TEST_RULE) {
-                result = ((TestRule) ruleEntry.rule).apply(result, description);
-            } else {
-                result = ((MethodRule) ruleEntry.rule).apply(result, method, target);
-            }
-        }
-        return result;
+        
     }
 
     /**
@@ -89,11 +68,7 @@ class RuleContainer {
      * VisibleForTesting
      */
     List<Object> getSortedRules() {
-        List<Object> result = new ArrayList<Object>();
-        for (RuleEntry entry : getSortedEntries()) {
-            result.add(entry.rule);
-        }
-        return result;
+        
     }
 
     static class RuleEntry {
@@ -105,9 +80,7 @@ class RuleContainer {
         final int order;
 
         RuleEntry(Object rule, int type, Integer order) {
-            this.rule = rule;
-            this.type = type;
-            this.order = order != null ? order.intValue() : Rule.DEFAULT_ORDER;
+            
         }
     }
 }

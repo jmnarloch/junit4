@@ -19,7 +19,7 @@ public interface FilterFactory {
     @SuppressWarnings("serial")
     class FilterNotCreatedException extends Exception {
         public FilterNotCreatedException(Exception exception) {
-            super(exception.getMessage(), exception);
+            
         }
     }
 }

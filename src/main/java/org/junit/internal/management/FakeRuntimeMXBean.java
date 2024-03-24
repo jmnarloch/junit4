@@ -14,7 +14,7 @@ class FakeRuntimeMXBean implements RuntimeMXBean {
    * <p>Always returns an empty list.
    */
   public List<String> getInputArguments() {
-    return Collections.emptyList();
+    
   }
 
 }

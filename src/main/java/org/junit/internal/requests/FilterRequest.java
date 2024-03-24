@@ -26,20 +26,11 @@ public final class FilterRequest extends Request {
      * <code>request</code>
      */
     public FilterRequest(Request request, Filter filter) {
-        this.request = request;
-        this.fFilter = filter;
+        
     }
 
     @Override
     public Runner getRunner() {
-        try {
-            Runner runner = request.getRunner();
-            fFilter.apply(runner);
-            return runner;
-        } catch (NoTestsRemainException e) {
-            return new ErrorReportingRunner(Filter.class, new Exception(String
-                    .format("No tests found matching %s from %s", fFilter
-                            .describe(), request.toString())));
-        }
+        
     }
 }

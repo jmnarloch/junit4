@@ -48,7 +48,7 @@ public class Timeout implements TestRule {
      * @since 4.12
      */
     public static Builder builder() {
-        return new Builder();
+        
     }
 
     /**
@@ -65,7 +65,7 @@ public class Timeout implements TestRule {
      */
     @Deprecated
     public Timeout(int millis) {
-        this(millis, TimeUnit.MILLISECONDS);
+        
     }
 
     /**
@@ -78,9 +78,7 @@ public class Timeout implements TestRule {
      * @since 4.12
      */
     public Timeout(long timeout, TimeUnit timeUnit) {
-        this.timeout = timeout;
-        this.timeUnit = timeUnit;
-        lookForStuckThread = false;
+        
     }
 
     /**
@@ -90,9 +88,7 @@ public class Timeout implements TestRule {
      * @since 4.12
      */
     protected Timeout(Builder builder) {
-        timeout = builder.getTimeout();
-        timeUnit = builder.getTimeUnit();
-        lookForStuckThread = builder.getLookingForStuckThread();
+        
     }
 
     /**
@@ -102,7 +98,7 @@ public class Timeout implements TestRule {
      * @since 4.12
      */
     public static Timeout millis(long millis) {
-        return new Timeout(millis, TimeUnit.MILLISECONDS);
+        
     }
 
     /**
@@ -112,7 +108,7 @@ public class Timeout implements TestRule {
      * @since 4.12
      */
     public static Timeout seconds(long seconds) {
-        return new Timeout(seconds, TimeUnit.SECONDS);
+        
     }
 
     /**
@@ -121,7 +117,7 @@ public class Timeout implements TestRule {
      * @since 4.12
      */
     protected final long getTimeout(TimeUnit unit) {
-        return unit.convert(timeout, timeUnit);
+        
     }
 
     /**
@@ -131,7 +127,7 @@ public class Timeout implements TestRule {
      * @since 4.12
      */
     protected final boolean getLookingForStuckThread() {
-        return lookForStuckThread;
+        
     }
 
     /**
@@ -144,22 +140,11 @@ public class Timeout implements TestRule {
      */
     protected Statement createFailOnTimeoutStatement(
             Statement statement) throws Exception {
-        return FailOnTimeout.builder()
-            .withTimeout(timeout, timeUnit)
-            .withLookingForStuckThread(lookForStuckThread)
-            .build(statement);
+        
     }
 
     public Statement apply(Statement base, Description description) {
-        try {
-            return createFailOnTimeoutStatement(base);
-        } catch (final Exception e) {
-            return new Statement() {
-                @Override public void evaluate() throws Throwable {
-                    throw new RuntimeException("Invalid parameters for Timeout", e);
-                }
-            };
-        }
+        
     }
 
     /**
@@ -172,8 +157,7 @@ public class Timeout implements TestRule {
         private long timeout = 0;
         private TimeUnit timeUnit = TimeUnit.SECONDS;
 
-        protected Builder() {
-        }
+        protected Builder() { }
 
         /**
          * Specifies the time to wait before timing out the test.
@@ -191,17 +175,15 @@ public class Timeout implements TestRule {
          * @return {@code this} for method chaining.
          */
         public Builder withTimeout(long timeout, TimeUnit unit) {
-            this.timeout = timeout;
-            this.timeUnit = unit;
-            return this;
+            
         }
 
         protected long getTimeout() {
-            return timeout;
+            
         }
 
         protected TimeUnit getTimeUnit()  {
-            return timeUnit;
+            
         }
 
         /**
@@ -214,12 +196,11 @@ public class Timeout implements TestRule {
          * @return {@code this} for method chaining.
          */
         public Builder withLookingForStuckThread(boolean enable) {
-            this.lookForStuckThread = enable;
-            return this;
+            
         }
 
         protected boolean getLookingForStuckThread() {
-            return lookForStuckThread;
+            
         }
 
 
@@ -227,7 +208,7 @@ public class Timeout implements TestRule {
          * Builds a {@link Timeout} instance using the values in this builder.,
          */
         public Timeout build() {
-            return new Timeout(this);
+            
         }
     }
 }

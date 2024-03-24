@@ -14,30 +14,30 @@ public class TestDecorator extends Assert implements Test {
     protected Test fTest;
 
     public TestDecorator(Test test) {
-        fTest = test;
+        
     }
 
     /**
      * The basic run behaviour.
      */
     public void basicRun(TestResult result) {
-        fTest.run(result);
+        
     }
 
     public int countTestCases() {
-        return fTest.countTestCases();
+        
     }
 
     public void run(TestResult result) {
-        basicRun(result);
+        
     }
 
     @Override
     public String toString() {
-        return fTest.toString();
+        
     }
 
     public Test getTest() {
-        return fTest;
+        
     }
 }

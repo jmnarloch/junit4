@@ -16,7 +16,7 @@ public class Computer {
      * Returns a new default computer, which runs tests in serial order
      */
     public static Computer serial() {
-        return new Computer();
+        
     }
 
     /**
@@ -25,28 +25,13 @@ public class Computer {
      */
     public Runner getSuite(final RunnerBuilder builder,
             Class<?>[] classes) throws InitializationError {
-        return new Suite(new RunnerBuilder() {
-            @Override
-            public Runner runnerForClass(Class<?> testClass) throws Throwable {
-                return getRunner(builder, testClass);
-            }
-        }, classes) {
-            @Override
-            protected String getName() {
-                /*
-                 * #1320 The generated suite is not based on a real class so
-                 * only a 'null' description can be generated from it. This name
-                 * will be overridden here.
-                 */
-                return "classes";
-            }
-        };
+        
     }
 
     /**
      * Create a single-class runner for {@code testClass}, using {@code builder}
      */
     protected Runner getRunner(RunnerBuilder builder, Class<?> testClass) throws Throwable {
-        return builder.runnerForClass(testClass);
+        
     }
 }

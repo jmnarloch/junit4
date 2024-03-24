@@ -90,8 +90,7 @@ public @interface Test {
     static class None extends Throwable {
         private static final long serialVersionUID = 1L;
 
-        private None() {
-        }
+        private None() { }
     }
 
     /**

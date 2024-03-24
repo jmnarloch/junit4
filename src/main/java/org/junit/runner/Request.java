@@ -37,8 +37,7 @@ public abstract class Request {
      * @return a <code>Request</code> that will cause a single test be run
      */
     public static Request method(Class<?> clazz, String methodName) {
-        Description method = Description.createTestDescription(clazz, methodName);
-        return Request.aClass(clazz).filterWith(method);
+        
     }
 
     /**
@@ -49,7 +48,7 @@ public abstract class Request {
      * @return a <code>Request</code> that will cause all tests in the class to be run
      */
     public static Request aClass(Class<?> clazz) {
-        return new ClassRequest(clazz);
+        
     }
 
     /**
@@ -60,7 +59,7 @@ public abstract class Request {
      * @return a <code>Request</code> that will cause all tests in the class to be run
      */
     public static Request classWithoutSuiteMethod(Class<?> clazz) {
-        return new ClassRequest(clazz, false);
+        
     }
 
     /**
@@ -72,13 +71,7 @@ public abstract class Request {
      * @return a <code>Request</code> that will cause all tests in the classes to be run
      */
     public static Request classes(Computer computer, Class<?>... classes) {
-        try {
-            AllDefaultPossibilitiesBuilder builder = new AllDefaultPossibilitiesBuilder();
-            Runner suite = computer.getSuite(builder, classes);
-            return runner(suite);
-        } catch (InitializationError e) {
-            return runner(new ErrorReportingRunner(e, classes));
-        }
+        
     }
 
     /**
@@ -89,7 +82,7 @@ public abstract class Request {
      * @return a <code>Request</code> that will cause all tests in the classes to be run
      */
     public static Request classes(Class<?>... classes) {
-        return classes(JUnitCore.defaultComputer(), classes);
+        
     }
 
 
@@ -98,7 +91,7 @@ public abstract class Request {
      * test class with the given cause.
      */
     public static Request errorReport(Class<?> klass, Throwable cause) {
-        return runner(new ErrorReportingRunner(klass, cause));
+        
     }
 
     /**
@@ -106,12 +99,7 @@ public abstract class Request {
      * @return a <code>Request</code> that will run the given runner when invoked
      */
     public static Request runner(final Runner runner) {
-        return new Request() {
-            @Override
-            public Runner getRunner() {
-                return runner;
-            }
-        };
+        
     }
 
     /**
@@ -129,7 +117,7 @@ public abstract class Request {
      * @return the filtered Request
      */
     public Request filterWith(Filter filter) {
-        return new FilterRequest(this, filter);
+        
     }
 
     /**
@@ -143,7 +131,7 @@ public abstract class Request {
      * @return the filtered Request
      */
     public Request filterWith(Description desiredDescription) {
-        return filterWith(Filter.matchMethodDescription(desiredDescription));
+        
     }
 
     /**
@@ -169,7 +157,7 @@ public abstract class Request {
      * @return a Request with ordered Tests
      */
     public Request sortWith(Comparator<Description> comparator) {
-        return new SortingRequest(this, comparator);
+        
     }
 
     /**
@@ -197,6 +185,6 @@ public abstract class Request {
      * @since 4.13
      */
     public Request orderWith(Ordering ordering) {
-        return new OrderingRequest(this, ordering);
+        
     }
 }

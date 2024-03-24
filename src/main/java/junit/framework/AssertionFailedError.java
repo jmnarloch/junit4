@@ -10,8 +10,7 @@ public class AssertionFailedError extends AssertionError {
     /**
      * Constructs a new AssertionFailedError without a detail message.
      */
-    public AssertionFailedError() {
-    }
+    public AssertionFailedError() { }
 
     /**
      * Constructs a new AssertionFailedError with the specified detail message.
@@ -20,10 +19,10 @@ public class AssertionFailedError extends AssertionError {
      * retrieval by the {@code Throwable.getMessage()} method.
      */
     public AssertionFailedError(String message) {
-        super(defaultString(message));
+        
     }
 
     private static String defaultString(String message) {
-        return message == null ? "" : message;
+        
     }
 }

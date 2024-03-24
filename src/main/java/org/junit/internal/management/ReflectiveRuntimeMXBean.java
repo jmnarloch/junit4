@@ -32,8 +32,7 @@ final class ReflectiveRuntimeMXBean implements RuntimeMXBean {
   }
 
   ReflectiveRuntimeMXBean(Object runtimeMxBean) {
-    super();
-    this.runtimeMxBean = runtimeMxBean;
+    
   }
 
   /**
@@ -41,20 +40,7 @@ final class ReflectiveRuntimeMXBean implements RuntimeMXBean {
    */
   @SuppressWarnings("unchecked")
   public List<String> getInputArguments() {
-    if (Holder.getInputArgumentsMethod != null) {
-      try {
-        return (List<String>) Holder.getInputArgumentsMethod.invoke(runtimeMxBean);
-      } catch (ClassCastException e) { // no multi-catch with source level 6
-        // fallthrough
-      } catch (IllegalAccessException e) {
-        // fallthrough
-      } catch (IllegalArgumentException e) {
-        // fallthrough
-      } catch (InvocationTargetException e) {
-        // fallthrough
-      }
-    }
-    return Collections.emptyList();
+    
   }
 
 }

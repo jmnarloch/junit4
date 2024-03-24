@@ -22,22 +22,7 @@ public class ManagementFactory {
     }
 
     static Object getBeanObject(String methodName) {
-      if (MANAGEMENT_FACTORY_CLASS != null) {
-        try {
-          return MANAGEMENT_FACTORY_CLASS.getMethod(methodName).invoke(null);
-        } catch (IllegalAccessException e) {
-          // fallthrough
-        } catch (IllegalArgumentException e) {
-          // fallthrough
-        } catch (InvocationTargetException e) {
-          // fallthrough
-        } catch (NoSuchMethodException e) {
-          // fallthrough
-        } catch (SecurityException e) {
-          // fallthrough
-        }
-      }
-      return null;
+      
     }
   }
 
@@ -46,8 +31,7 @@ public class ManagementFactory {
         getBean(FactoryHolder.getBeanObject("getRuntimeMXBean"));
 
     private static final RuntimeMXBean getBean(Object runtimeMxBean) {
-      return runtimeMxBean != null
-          ? new ReflectiveRuntimeMXBean(runtimeMxBean) : new FakeRuntimeMXBean();
+      
     }
   }
 
@@ -56,8 +40,7 @@ public class ManagementFactory {
         getBean(FactoryHolder.getBeanObject("getThreadMXBean"));
 
     private static final ThreadMXBean getBean(Object threadMxBean) {
-      return threadMxBean != null
-          ? new ReflectiveThreadMXBean(threadMxBean) : new FakeThreadMXBean();
+      
     }
   }
 
@@ -65,13 +48,13 @@ public class ManagementFactory {
    * @see java.lang.management.ManagementFactory#getRuntimeMXBean()
    */
   public static RuntimeMXBean getRuntimeMXBean() {
-    return RuntimeHolder.RUNTIME_MX_BEAN;
+    
   }
 
   /**
    * @see java.lang.management.ManagementFactory#getThreadMXBean()
    */
   public static ThreadMXBean getThreadMXBean() {
-    return ThreadHolder.THREAD_MX_BEAN;
+    
   }
 }

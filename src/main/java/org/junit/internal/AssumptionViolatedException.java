@@ -33,14 +33,7 @@ public class AssumptionViolatedException extends RuntimeException implements Sel
      */
     @Deprecated
     public AssumptionViolatedException(String assumption, boolean hasValue, Object value, Matcher<?> matcher) {
-        this.fAssumption = assumption;
-        this.fValue = value;
-        this.fMatcher = matcher;
-        this.fValueMatcher = hasValue;
-
-        if (value instanceof Throwable) {
-          initCause((Throwable) value);
-        }
+        
     }
 
     /**
@@ -51,7 +44,7 @@ public class AssumptionViolatedException extends RuntimeException implements Sel
      */
     @Deprecated
     public AssumptionViolatedException(Object value, Matcher<?> matcher) {
-        this(null, true, value, matcher);
+        
     }
 
     /**
@@ -62,7 +55,7 @@ public class AssumptionViolatedException extends RuntimeException implements Sel
      */
     @Deprecated
     public AssumptionViolatedException(String assumption, Object value, Matcher<?> matcher) {
-        this(assumption, true, value, matcher);
+        
     }
 
     /**
@@ -72,7 +65,7 @@ public class AssumptionViolatedException extends RuntimeException implements Sel
      */
     @Deprecated
     public AssumptionViolatedException(String assumption) {
-        this(assumption, false, null, null);
+        
     }
 
     /**
@@ -82,34 +75,16 @@ public class AssumptionViolatedException extends RuntimeException implements Sel
      */
     @Deprecated
     public AssumptionViolatedException(String assumption, Throwable e) {
-        this(assumption, false, null, null);
-        initCause(e);
+        
     }
 
     @Override
     public String getMessage() {
-        return StringDescription.asString(this);
+        
     }
 
     public void describeTo(Description description) {
-        if (fAssumption != null) {
-            description.appendText(fAssumption);
-        }
-
-        if (fValueMatcher) {
-            // a value was passed in when this instance was constructed; print it
-            if (fAssumption != null) {
-                description.appendText(": ");
-            }
-
-            description.appendText("got: ");
-            description.appendValue(fValue);
-
-            if (fMatcher != null) {
-                description.appendText(", expected: ");
-                description.appendDescriptionOf(fMatcher);
-            }
-        }
+        
     }
 
     /**
@@ -121,19 +96,6 @@ public class AssumptionViolatedException extends RuntimeException implements Sel
      * @throws IOException When serialization fails
      */
     private void writeObject(ObjectOutputStream objectOutputStream) throws IOException {
-        ObjectOutputStream.PutField putField = objectOutputStream.putFields();
-        putField.put("fAssumption", fAssumption);
-        putField.put("fValueMatcher", fValueMatcher);
-
-        // We have to wrap the matcher into a serializable form.
-        putField.put("fMatcher", SerializableMatcherDescription.asSerializableMatcher(fMatcher));
-
-        // We have to wrap the value inside a non-String class (instead of serializing the String value directly) as
-        // A Description will handle a String and non-String object differently (1st is surrounded by '"' while the
-        // latter will be surrounded by '<' '>'. Wrapping it makes sure that the description of a serialized and
-        // non-serialized instance produce the exact same description
-        putField.put("fValue", SerializableValueDescription.asSerializableValue(fValue));
-
-        objectOutputStream.writeFields();
+        
     }
 }

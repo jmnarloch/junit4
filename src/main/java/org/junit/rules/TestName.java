@@ -29,13 +29,13 @@ public class TestName extends TestWatcher {
 
     @Override
     protected void starting(Description d) {
-        name = d.getMethodName();
+        
     }
 
     /**
      * @return the name of the currently-running test method
      */
     public String getMethodName() {
-        return name;
+        
     }
 }

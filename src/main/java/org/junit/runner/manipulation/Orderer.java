@@ -17,7 +17,7 @@ public final class Orderer  {
     private final Ordering ordering;
 
     Orderer(Ordering delegate) {
-        this.ordering = delegate;
+        
     }
 
     /**
@@ -27,24 +27,7 @@ public final class Orderer  {
      */
     public List<Description> order(Collection<Description> descriptions)
             throws InvalidOrderingException {
-        List<Description> inOrder = ordering.orderItems(
-                Collections.unmodifiableCollection(descriptions));
-        if (!ordering.validateOrderingIsCorrect()) {
-            return inOrder;
-        }
-
-        Set<Description> uniqueDescriptions = new HashSet<Description>(descriptions);
-        if (!uniqueDescriptions.containsAll(inOrder)) {
-            throw new InvalidOrderingException("Ordering added items");
-        }
-        Set<Description> resultAsSet = new HashSet<Description>(inOrder);
-        if (resultAsSet.size() != inOrder.size()) {
-            throw new InvalidOrderingException("Ordering duplicated items");
-        } else if (!resultAsSet.containsAll(uniqueDescriptions)) {
-            throw new InvalidOrderingException("Ordering removed items");
-        }
-
-        return inOrder;
+        
     }
 
     /**
@@ -54,9 +37,6 @@ public final class Orderer  {
      * children)
      */
     public void apply(Object target) throws InvalidOrderingException {
-        if (target instanceof Orderable) {
-            Orderable orderable = (Orderable) target;
-            orderable.order(this);
-        }
+        
     }
 }

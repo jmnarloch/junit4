@@ -15,34 +15,18 @@ public class RunAfters extends Statement {
     private final List<FrameworkMethod> afters;
 
     public RunAfters(Statement next, List<FrameworkMethod> afters, Object target) {
-        this.next = next;
-        this.afters = afters;
-        this.target = target;
+        
     }
 
     @Override
     public void evaluate() throws Throwable {
-        List<Throwable> errors = new ArrayList<Throwable>();
-        try {
-            next.evaluate();
-        } catch (Throwable e) {
-            errors.add(e);
-        } finally {
-            for (FrameworkMethod each : afters) {
-                try {
-                    invokeMethod(each);
-                } catch (Throwable e) {
-                    errors.add(e);
-                }
-            }
-        }
-        MultipleFailureException.assertEmpty(errors);
+        
     }
 
     /**
      * @since 4.13
      */
     protected void invokeMethod(FrameworkMethod method) throws Throwable {
-        method.invokeExplosively(target);
+        
     }
 }

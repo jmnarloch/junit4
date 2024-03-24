@@ -20,45 +20,27 @@ public class ResultMatchers {
      * @deprecated will be private soon.
      */
     @Deprecated
-    public ResultMatchers() {
-    }
+    public ResultMatchers() { }
 
     /**
      * Matches if the tests are all successful
      */
     public static Matcher<PrintableResult> isSuccessful() {
-        return failureCountIs(0);
+        
     }
 
     /**
      * Matches if there are {@code count} failures
      */
     public static Matcher<PrintableResult> failureCountIs(final int count) {
-        return new TypeSafeMatcher<PrintableResult>() {
-            public void describeTo(Description description) {
-                description.appendText("has " + count + " failures");
-            }
-
-            @Override
-            public boolean matchesSafely(PrintableResult item) {
-                return item.failureCount() == count;
-            }
-        };
+        
     }
 
     /**
      * Matches if the result has exactly one failure, and it contains {@code string}
      */
     public static Matcher<Object> hasSingleFailureContaining(final String string) {
-        return new BaseMatcher<Object>() {
-            public boolean matches(Object item) {
-                return item.toString().contains(string) && failureCountIs(1).matches(item);
-            }
-
-            public void describeTo(Description description) {
-                description.appendText("has single failure containing " + string);
-            }
-        };
+        
     }
 
     /**
@@ -67,17 +49,7 @@ public class ResultMatchers {
      * @since 4.13
      */
     public static Matcher<PrintableResult> hasSingleFailureMatching(final Matcher<Throwable> matcher) {
-        return new TypeSafeMatcher<PrintableResult>() {
-            @Override
-            public boolean matchesSafely(PrintableResult item) {
-                return item.failureCount() == 1 && matcher.matches(item.failures().get(0).getException());
-            }
-
-            public void describeTo(Description description) {
-                description.appendText("has failure with exception matching ");
-                matcher.describeTo(description);
-            }
-        };
+        
     }
 
     /**
@@ -85,15 +57,6 @@ public class ResultMatchers {
      * contains {@code string}
      */
     public static Matcher<PrintableResult> hasFailureContaining(final String string) {
-        return new TypeSafeMatcher<PrintableResult>() {
-            @Override
-            public boolean matchesSafely(PrintableResult item) {
-                return item.failureCount() > 0 && item.toString().contains(string);
-            }
-
-            public void describeTo(Description description) {
-                description.appendText("has failure containing " + string);
-            }
-        };
+        
     }
 }

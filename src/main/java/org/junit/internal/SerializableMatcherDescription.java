@@ -20,15 +20,15 @@ class SerializableMatcherDescription<T> extends BaseMatcher<T> implements Serial
     private final String matcherDescription;
 
     private SerializableMatcherDescription(Matcher<T> matcher) {
-        matcherDescription = StringDescription.asString(matcher);
+        
     }
 
     public boolean matches(Object o) {
-        throw new UnsupportedOperationException("This Matcher implementation only captures the description");
+        
     }
 
     public void describeTo(Description description) {
-        description.appendText(matcherDescription);
+        
     }
 
     /**
@@ -38,10 +38,6 @@ class SerializableMatcherDescription<T> extends BaseMatcher<T> implements Serial
      * the SerializableMatcherDescription representation of it if it is not.
      */
     static <T> Matcher<T> asSerializableMatcher(Matcher<T> matcher) {
-        if (matcher == null || matcher instanceof Serializable) {
-            return matcher;
-        } else {
-            return new SerializableMatcherDescription<T>(matcher);
-        }
+        
     }
 }

@@ -14,6 +14,6 @@ public class TestCouldNotBeSkippedException extends RuntimeException {
 
     /** Creates an instance using the given assumption failure. */
     public TestCouldNotBeSkippedException(org.junit.internal.AssumptionViolatedException cause) {
-        super("Test could not be skipped due to other failures", cause);
+        
     }
 }

@@ -17,23 +17,21 @@ public class ThrowableCauseMatcher<T extends Throwable> extends
     private final Matcher<?> causeMatcher;
 
     public ThrowableCauseMatcher(Matcher<?> causeMatcher) {
-        this.causeMatcher = causeMatcher;
+        
     }
 
     public void describeTo(Description description) {
-        description.appendText("exception with cause ");
-        description.appendDescriptionOf(causeMatcher);
+        
     }
 
     @Override
     protected boolean matchesSafely(T item) {
-        return causeMatcher.matches(item.getCause());
+        
     }
 
     @Override
     protected void describeMismatchSafely(T item, Description description) {
-        description.appendText("cause ");
-        causeMatcher.describeMismatch(item.getCause(), description);
+        
     }
 
     /**
@@ -45,6 +43,6 @@ public class ThrowableCauseMatcher<T extends Throwable> extends
      */
     @Factory
     public static <T extends Throwable> Matcher<T> hasCause(final Matcher<?> matcher) {
-        return new ThrowableCauseMatcher<T>(matcher);
+        
     }
 }
