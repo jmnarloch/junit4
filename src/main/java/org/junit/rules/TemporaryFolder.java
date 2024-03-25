@@ -55,7 +55,7 @@ public class TemporaryFolder extends ExternalResource {
      * directory to create temporary resources.
      */
     public TemporaryFolder() {
-        
+        this((File) null);
     }
 
     /**
@@ -66,7 +66,8 @@ public class TemporaryFolder extends ExternalResource {
      * If {@code null} then system default temporary-file directory is used.
      */
     public TemporaryFolder(File parentFolder) {
-        
+        this.parentFolder = parentFolder;
+        this.assureDeletion = false;
     }
 
     /**
@@ -74,7 +75,8 @@ public class TemporaryFolder extends ExternalResource {
      * values from a builder.
      */
     protected TemporaryFolder(Builder builder) {
-        
+        this.parentFolder = builder.parentFolder;
+        this.assureDeletion = builder.assureDeletion;
     }
 
     /**
@@ -83,7 +85,7 @@ public class TemporaryFolder extends ExternalResource {
      * @since 4.13
      */
     public static Builder builder() {
-        
+        return new Builder();
     }
 
     /**
@@ -95,7 +97,8 @@ public class TemporaryFolder extends ExternalResource {
         private File parentFolder;
         private boolean assureDeletion;
 
-        protected Builder() { }
+        protected Builder() {
+        }
 
         /**
          * Specifies which folder to use for creating temporary resources.
@@ -105,7 +108,8 @@ public class TemporaryFolder extends ExternalResource {
          * @return this
          */
         public Builder parentFolder(File parentFolder) {
-            
+            this.parentFolder = parentFolder;
+            return this;
         }
 
         /**
@@ -116,25 +120,26 @@ public class TemporaryFolder extends ExternalResource {
          * @return this
          */
         public Builder assureDeletion() {
-            
+            assureDeletion = true;
+            return this;
         }
 
         /**
          * Builds a {@link TemporaryFolder} instance using the values in this builder.
          */
         public TemporaryFolder build() {
-            
+            return new TemporaryFolder(this);
         }
     }
 
     @Override
     protected void before() throws Throwable {
-        
+        create();
     }
 
     @Override
     protected void after() {
-        
+        delete();
     }
 
     // testing purposes only
@@ -143,21 +148,26 @@ public class TemporaryFolder extends ExternalResource {
      * for testing purposes only. Do not use.
      */
     public void create() throws IOException {
-        
+        folder = createTemporaryFolderIn(parentFolder);
     }
 
     /**
      * Returns a new fresh file with the given name under the temporary folder.
      */
     public File newFile(String fileName) throws IOException {
-        
+        File file = new File(getRoot(), fileName);
+        if (!file.createNewFile()) {
+            throw new IOException(
+            "a file with the name \'" + fileName + "\' already exists in the test folder");
+        }
+        return file;
     }
 
     /**
      * Returns a new fresh file with a random name under the temporary folder.
      */
     public File newFile() throws IOException {
-        
+        return File.createTempFile(TMP_PREFIX, null, getRoot());
     }
 
     /**
@@ -165,7 +175,7 @@ public class TemporaryFolder extends ExternalResource {
      * folder.
      */
     public File newFolder(String path) throws IOException {
-        
+        return newFolder(new String[]{path});
     }
 
     /**
@@ -176,33 +186,91 @@ public class TemporaryFolder extends ExternalResource {
      * {@code "parent"} directory.
      */
     public File newFolder(String... paths) throws IOException {
-        
+        if (paths.length == 0) {
+            throw new IllegalArgumentException("must pass at least one path");
+        }
+        File file = getRoot();
+        for (String path : paths) {
+            file = new File(file, path);
+        }
+        if (!file.mkdirs()) {
+            throw new IOException("a folder failed to be created");
+        }
+        return file;
     }
 
     /**
      * Returns a new fresh folder with a random name under the temporary folder.
      */
     public File newFolder() throws IOException {
-        
+        return createTemporaryFolderIn(getRoot());
     }
 
     private static File createTemporaryFolderIn(File parentFolder) throws IOException {
-        
+        try {
+            return createTemporaryFolderWithNioApi(parentFolder);
+        } catch (ClassNotFoundException ignore) {
+            // Continue and try with java.io.File API
+        } catch (NoSuchMethodException ignore) {
+            // Continue and try with java.io.File API
+        } catch (InvocationTargetException ignore) {
+            // Continue and try with java.io.File API
+        } catch (IllegalAccessException ignore) {
+            // Continue and try with java.io.File API
+        }
+        return createTemporaryFolderWithFileApi(parentFolder);
     }
 
     private static File createTemporaryFolderWithNioApi(File parentFolder) throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Class<?> files = Class.forName("java.nio.file.Files");
+        Class<?> path = Class.forName("java.nio.file.Path");
+        Class<?> fileAttribute = Class.forName("java.nio.file.attribute.FileAttribute");
         
+        Object dir;
+        if (parentFolder != null) {
+            Class<?> paths = Class.forName("java.nio.file.Paths");
+            Method method = paths.getMethod("get", String.class, String[].class);
+            String[] pathParts = { parentFolder.getPath() };
+            dir = method.invoke(null, pathParts);
+        } else {
+            dir = files.getDeclaredMethod("createTempDirectory", String.class, fileAttribute.getClasses()). //
+            invoke(null, TMP_PREFIX, new Class<?>[0]);
+        }
+        
+        return (File) path.cast(dir).getDeclaredMethod("toFile").invoke(path.cast(dir));
     }
 
     private static File createTemporaryFolderWithFileApi(File parentFolder) throws IOException {
-        
+        File createdFolder = null;
+        for (int i = 0; i < TEMP_DIR_ATTEMPTS; ++i) {
+            String suffix = ".tmp";
+            try {
+                createdFolder = File.createTempFile(TMP_PREFIX, suffix, parentFolder);
+            } catch (IOException e) {
+                throw new RuntimeException("Unable to create temporary directory, " + createdFolder, e);
+            }
+            
+            if (!createdFolder.delete()) {
+                throw new IOException(
+                "Unable to delete temporary file, " + createdFolder);
+            }
+            
+            if (createdFolder.mkdir()) {
+                return createdFolder;
+            }
+        }
+        throw new IOException("Unable to create temporary directory in: " + parentFolder);
     }
 
     /**
      * @return the location of this temporary folder.
      */
     public File getRoot() {
-        
+        if (folder == null) {
+            throw new IllegalStateException(
+            "the temporary folder has not yet been created");
+        }
+        return folder;
     }
 
     /**
@@ -213,7 +281,11 @@ public class TemporaryFolder extends ExternalResource {
      * and deletion of resources is assured.
      */
     public void delete() {
-        
+        if (!tryDelete()) {
+            if (assureDeletion) {
+                fail("Unable to clean up temporary folder " + folder);
+            }
+        }
     }
 
     /**
@@ -224,12 +296,24 @@ public class TemporaryFolder extends ExternalResource {
      *         {@code false} otherwise.
      */
     private boolean tryDelete() {
+        if (folder == null) {
+            return true;
+        }
         
+        return recursiveDelete(folder);
     }
 
     private boolean recursiveDelete(File file) {
-        // Try deleting file before assuming file is a directory
-        // to prevent following symbolic links.
-        
+        if (file.isDirectory()) {
+            File[] files = file.listFiles();
+            if (files != null) {
+                for (File each : files) {
+                    if (!recursiveDelete(each)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return file.delete();
     }
 }

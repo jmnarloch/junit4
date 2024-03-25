@@ -21,7 +21,19 @@ public class AnnotationValidatorFactory {
      * @since 4.12
      */
     public AnnotationValidator createAnnotationValidator(ValidateWith validateWithAnnotation) {
-        
+        AnnotationValidator result;
+        try {
+            if (VALIDATORS_FOR_ANNOTATION_TYPES.containsKey(validateWithAnnotation)) {
+                result = VALIDATORS_FOR_ANNOTATION_TYPES.get(validateWithAnnotation);
+            } else {
+                AnnotationValidator annotationValidator = validateWithAnnotation.value().newInstance();
+                VALIDATORS_FOR_ANNOTATION_TYPES.putIfAbsent(validateWithAnnotation, annotationValidator);
+                result = VALIDATORS_FOR_ANNOTATION_TYPES.get(validateWithAnnotation);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return result;
     }
 
 }

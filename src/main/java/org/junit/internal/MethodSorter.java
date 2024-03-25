@@ -12,8 +12,8 @@ public class MethodSorter {
      */
     public static final Comparator<Method> DEFAULT = new Comparator<Method>() {
         public int compare(Method m1, Method m2) {
-            
-        }
+        return m1.getName().compareTo(m2.getName());
+    }
     };
 
     /**
@@ -21,8 +21,8 @@ public class MethodSorter {
      */
     public static final Comparator<Method> NAME_ASCENDING = new Comparator<Method>() {
         public int compare(Method m1, Method m2) {
-            
-        }
+        return m1.getName().compareTo(m2.getName());
+    }
     };
 
     /**
@@ -40,12 +40,24 @@ public class MethodSorter {
      *      (non-)bug #7023180</a>
      */
     public static Method[] getDeclaredMethods(Class<?> clazz) {
+        Comparator<Method> comparator = getSorter(clazz.getAnnotation(FixMethodOrder.class));
         
+        Method[] methods = clazz.getDeclaredMethods();
+        if (comparator != null) {
+            Arrays.sort(methods, comparator);
+        }
+        
+        return methods;
     }
 
-    private MethodSorter() { }
+    private MethodSorter() {
+    }
 
     private static Comparator<Method> getSorter(FixMethodOrder fixMethodOrder) {
+        if (fixMethodOrder == null) {
+            return DEFAULT;
+        }
         
+        return fixMethodOrder.value().getComparator();
     }
 }

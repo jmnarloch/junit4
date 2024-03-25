@@ -20,7 +20,9 @@ public class Sorter extends Ordering implements Comparator<Description> {
      * NULL is a <code>Sorter</code> that leaves elements in an undefined order
      */
     public static final Sorter NULL = new Sorter(new Comparator<Description>() {
-        public int compare(Description o1, Description o2) { }
+        public int compare(Description o1, Description o2) {
+        return o1.getDisplayName().compareTo(o2.getDisplayName());
+    }
     });
 
     private final Comparator<Description> comparator;
@@ -33,7 +35,7 @@ public class Sorter extends Ordering implements Comparator<Description> {
      * @since 4.0
      */
     public Sorter(Comparator<Description> comparator) {
-        
+        this.comparator = comparator;
     }
 
     /**
@@ -43,16 +45,14 @@ public class Sorter extends Ordering implements Comparator<Description> {
      */
     @Override
     public void apply(Object target) {
-        /*
-         * Note that all runners that are Orderable are also Sortable (because
-         * Orderable extends Sortable). Sorting is more efficient than ordering,
-         * so we override the parent behavior so we sort instead.
-         */
-        
+        if (target instanceof Sortable) {
+            Sortable sortable = (Sortable) target;
+            sortable.sort(this);
+        }
     }
 
     public int compare(Description o1, Description o2) {
-        
+        return o1.getDisplayName().compareTo(o2.getDisplayName());
     }
  
     /**
@@ -62,13 +62,9 @@ public class Sorter extends Ordering implements Comparator<Description> {
      */
     @Override
     protected final List<Description> orderItems(Collection<Description> descriptions) {
-        /*
-         * In practice, we will never get here--Sorters do their work in the
-         * compare() method--but the Liskov substitution principle demands that
-         * we obey the general contract of Orderable. Luckily, it's trivial to
-         * implement.
-         */
-        
+        List<Description> result = new ArrayList<Description>(descriptions);
+        Collections.sort(result, this);
+        return result;
     }
 
     /**
@@ -77,5 +73,7 @@ public class Sorter extends Ordering implements Comparator<Description> {
      * @since 4.13
      */
     @Override
-    boolean validateOrderingIsCorrect() { }
+    boolean validateOrderingIsCorrect() {
+        return false;
+    }
 }

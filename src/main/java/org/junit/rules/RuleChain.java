@@ -68,7 +68,7 @@ public class RuleChain implements TestRule {
      * @return a {@code RuleChain} without a {@link TestRule}.
      */
     public static RuleChain emptyRuleChain() {
-        
+        return EMPTY_CHAIN;
     }
 
     /**
@@ -79,11 +79,11 @@ public class RuleChain implements TestRule {
      * @return a {@code RuleChain} with a single {@link TestRule}.
      */
     public static RuleChain outerRule(TestRule outerRule) {
-        
+        return emptyRuleChain().around(outerRule);
     }
 
     private RuleChain(List<TestRule> rules) {
-        
+        this.rulesStartingWithInnerMost = rules;
     }
 
     /**
@@ -95,13 +95,19 @@ public class RuleChain implements TestRule {
      * @throws NullPointerException if the argument {@code enclosedRule} is {@code null}
      */
     public RuleChain around(TestRule enclosedRule) {
-        
+        if (enclosedRule == null) {
+            throw new NullPointerException("The enclosed rule must not be null");
+        }
+        List<TestRule> rulesOfNewChain = new ArrayList<TestRule>();
+        rulesOfNewChain.add(enclosedRule);
+        rulesOfNewChain.addAll(rulesStartingWithInnerMost);
+        return new RuleChain(rulesOfNewChain);
     }
 
     /**
      * {@inheritDoc}
      */
     public Statement apply(Statement base, Description description) {
-        
+        return new RunRules(base, rulesStartingWithInnerMost, description);
     }
 }

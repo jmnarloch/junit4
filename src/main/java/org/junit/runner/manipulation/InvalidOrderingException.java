@@ -8,13 +8,14 @@ package org.junit.runner.manipulation;
 public class InvalidOrderingException extends Exception {
     private static final long serialVersionUID = 1L;
 
-    public InvalidOrderingException() { }
+    public InvalidOrderingException() {
+    }
 
     public InvalidOrderingException(String message) {
-        
+        super(message);
     }
 
     public InvalidOrderingException(String message, Throwable cause) {
-        
+        super(message, cause);
     }
 }

@@ -73,7 +73,9 @@ public class RuleMemberValidator {
     private final List<RuleValidator> validatorStrategies;
 
     RuleMemberValidator(Builder builder) {
-        
+        this.annotation = builder.annotation;
+        this.methods = builder.methods;
+        this.validatorStrategies = builder.validators;
     }
 
     /**
@@ -84,19 +86,26 @@ public class RuleMemberValidator {
      * @param errors the list of errors.
      */
     public void validate(TestClass target, List<Throwable> errors) {
+        List<FrameworkMember<?>> members = methods ? target.getAnnotatedMethods(annotation)
+        : target.getAnnotatedFields(annotation);
         
+        for (FrameworkMember<?> each : members) {
+            validateMember(each, errors);
+        }
     }
 
     private void validateMember(FrameworkMember<?> member, List<Throwable> errors) {
-        
+        for (RuleValidator strategy : validatorStrategies) {
+            strategy.validate(member, annotation, errors);
+        }
     }
 
     private static Builder classRuleValidatorBuilder() {
-        
+        return new Builder(ClassRule.class);
     }
 
     private static Builder testRuleValidatorBuilder() {
-        
+        return new Builder(Rule.class);
     }
 
     private static class Builder {
@@ -105,32 +114,35 @@ public class RuleMemberValidator {
         private final List<RuleValidator> validators;
 
         private Builder(Class<? extends Annotation> annotation) {
-            
+            this.annotation = annotation;
+            validators = new ArrayList<RuleValidator>();
         }
 
         Builder forMethods() {
-            
+            methods = true;
+            return this;
         }
 
         Builder withValidator(RuleValidator validator) {
-            
+            validators.add(validator);
+            return this;
         }
 
         RuleMemberValidator build() {
-            
+            return new RuleMemberValidator(this);
         }
     }
 
     private static boolean isRuleType(FrameworkMember<?> member) {
-        
+        return isMethodRule(member) || isTestRule(member);
     }
 
     private static boolean isTestRule(FrameworkMember<?> member) {
-        
+        return TestRule.class.isAssignableFrom(member.getType());
     }
 
     private static boolean isMethodRule(FrameworkMember<?> member) {
-        
+        return MethodRule.class.isAssignableFrom(member.getType());
     }
 
     /**
@@ -152,7 +164,9 @@ public class RuleMemberValidator {
      */
     private static final class MemberMustBeNonStaticOrAlsoClassRule implements RuleValidator {
         public void validate(FrameworkMember<?> member, Class<? extends Annotation> annotation, List<Throwable> errors) {
-            
+            if (member.isStatic()) {
+                errors.add(new Exception(annotation.getSimpleName() + "s must be static."));
+            }
         }
     }
 
@@ -161,7 +175,10 @@ public class RuleMemberValidator {
      */
     private static final class MemberMustBeStatic implements RuleValidator {
         public void validate(FrameworkMember<?> member, Class<? extends Annotation> annotation, List<Throwable> errors) {
-            
+            if (member.isStatic() == false) {
+                String message = annotation.getSimpleName() + "s must be static.";
+                errors.add(new Exception(message));
+            }
         }
     }
 
@@ -170,11 +187,14 @@ public class RuleMemberValidator {
      */
     private static final class DeclaringClassMustBePublic implements RuleValidator {
         public void validate(FrameworkMember<?> member, Class<? extends Annotation> annotation, List<Throwable> errors) {
-            
+            if (!isDeclaringClassPublic(member)) {
+                String message = "The class containing %s member %s must be public.";
+                errors.add(new Exception(String.format(message, annotation.getSimpleName(), member.getName())));
+            }
         }
 
         private boolean isDeclaringClassPublic(FrameworkMember<?> member) {
-            
+            return Modifier.isPublic(member.getDeclaringClass().getModifiers());
         }
     }
 
@@ -183,7 +203,9 @@ public class RuleMemberValidator {
      */
     private static final class MemberMustBePublic implements RuleValidator {
         public void validate(FrameworkMember<?> member, Class<? extends Annotation> annotation, List<Throwable> errors) {
-            
+            if (!member.isPublic()) {
+                errors.add(new Exception("The @" + annotation.getSimpleName() + " '" + member.getName() + "' must be public."));
+            }
         }
     }
 
@@ -192,7 +214,9 @@ public class RuleMemberValidator {
      */
     private static final class FieldMustBeARule implements RuleValidator {
         public void validate(FrameworkMember<?> member, Class<? extends Annotation> annotation, List<Throwable> errors) {
-            
+            if (isRuleType(member) && !isMethodRule(member)) {
+                errors.add(new ValidationError(member, annotation, "must return an implementation of MethodRule."));
+            }
         }
     }
 
@@ -202,7 +226,13 @@ public class RuleMemberValidator {
      */
     private static final class MethodMustBeARule implements RuleValidator {
         public void validate(FrameworkMember<?> member, Class<? extends Annotation> annotation, List<Throwable> errors) {
-            
+            if (RuleMemberValidator.isMethodRule(member)) {
+                return;
+            }
+            if (RuleMemberValidator.isRuleType(member)) {
+                return;
+            }
+            errors.add(new ValidationError(member, annotation, "must return an implementation of MethodRule."));
         }
     }
     
@@ -212,7 +242,12 @@ public class RuleMemberValidator {
     private static final class MethodMustBeATestRule implements RuleValidator {
         public void validate(FrameworkMember<?> member,
                 Class<? extends Annotation> annotation, List<Throwable> errors) {
+            if (isTestRule(member) || isRuleType(member)) {
+                return;
+            }
             
+            errors.add(new ValidationError("This method must return an implementation of TestRule.",
+            annotation));
         }
     }
     
@@ -223,7 +258,11 @@ public class RuleMemberValidator {
 
         public void validate(FrameworkMember<?> member,
                 Class<? extends Annotation> annotation, List<Throwable> errors) {
+            if (isTestRule(member) || isRuleType(member)) {
+                return;
+            }
             
+            errors.add(new ValidationError("Field " + member.getName() + " must implement MethodRule"));
         }
     }
 }

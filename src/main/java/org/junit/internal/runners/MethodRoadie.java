@@ -30,39 +30,116 @@ public class MethodRoadie {
     private TestMethod testMethod;
 
     public MethodRoadie(Object test, TestMethod method, RunNotifier notifier, Description description) {
-        
+        this.test = test;
+        this.notifier = notifier;
+        this.description = description;
+        testMethod = method;
     }
 
     public void run() {
-        
+        if (testMethod.isIgnored()) {
+            notifier.fireTestIgnored(description);
+            return;
+        }
+        notifier.fireTestStarted(description);
+        try {
+            long timeout = testMethod.getTimeout();
+            if (timeout != 0) {
+                runWithTimeout(timeout);
+            } else {
+                runTest();
+            }
+        } finally {
+            notifier.fireTestFinished(description);
+        }
     }
 
     private void runWithTimeout(final long timeout) {
-        
+        runBeforesThenTestThenAfters(new Runnable() {
+            public void run() {
+                ExecutorService es = Executors.newSingleThreadExecutor();
+                Callable<Method> callable = new Callable<Method>() {
+                    public Method call() throws Exception {
+                        runTestMethod();
+                        return testMethod.getMethod();
+                    }
+                };
+                try {
+                    Future<Method> future = es.submit(callable);
+                    es.shutdown();
+                    future.get(timeout, TimeUnit.MILLISECONDS);
+                } catch (TimeoutException e) {
+                    addFailure(new TestTimedOutException(timeout, TimeUnit.MILLISECONDS));
+                } catch (FailedBefore e) {
+                } catch (Exception e) {
+                    addFailure(e);
+                } finally {
+                    es.shutdownNow();
+                }
+            }
+        });
     }
 
     public void runTest() {
-        
+        runBeforesThenTestThenAfters(new Runnable() {
+            public void run() {
+                runTestMethod();
+            }
+        });
     }
 
     public void runBeforesThenTestThenAfters(Runnable test) {
-        
+        runBeforesThenTestThenAfters(test, false);
     }
 
     protected void runTestMethod() {
-        
+        try {
+            executeMethod();
+        } catch (InvocationTargetException e) {
+            Throwable actualException = e.getTargetException();
+            if (actualException instanceof AssumptionViolatedException) {
+                return;
+            } else {
+                addFailure(actualException);
+            }
+        } catch (Throwable e) {
+            addFailure(e);
+        }
     }
 
     private void runBefores() throws FailedBefore {
-        
+        try {
+            try {
+                List<Method> befores = testMethod.getBefores();
+                for (Method before : befores) {
+                    before.invoke(test);
+                }
+            } catch (InvocationTargetException e) {
+                throw e.getTargetException();
+            }
+        } catch (AssumptionViolatedException e) {
+            throw new FailedBefore();
+        } catch (Throwable e) {
+            addFailure(e);
+            throw new FailedBefore();
+        }
     }
 
     private void runAfters() {
-        
+        List<Method> afters = testMethod.getAfters();
+        for (Method after : afters) {
+            try {
+                after.invoke(test);
+            } catch (InvocationTargetException e) {
+                addFailure(e.getTargetException());
+            } catch (Throwable e) {
+                addFailure(e); // Untested, but seems impossible
+            }
+        }
     }
 
     protected void addFailure(Throwable e) {
-        
+        notifier.fireTestFailure(new Failure(description, e));
     }
 }
 

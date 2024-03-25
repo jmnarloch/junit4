@@ -20,40 +20,54 @@ public class FrameworkField extends FrameworkMember<FrameworkField> {
      * <p>Access relaxed to {@code public} since version 4.13.1.
      */
     public FrameworkField(Field field) {
-        
+        if (field == null) {
+            throw new NullPointerException("Field cannot be null");
+        }
+        this.field = field;
     }
 
     @Override
     public String getName() {
-        
+        return getField().getName();
     }
 
     public Annotation[] getAnnotations() {
-        
+        return field.getAnnotations();
     }
 
     public <T extends Annotation> T getAnnotation(Class<T> annotationType) {
-        
+        return field.getAnnotation(annotationType);
     }
 
     @Override
     public boolean isShadowedBy(FrameworkField otherMember) {
-        
+        if (!otherMember.getName().equals(getName())) {
+            return false;
+        }
+        if (otherMember.getDeclaringClass().isAssignableFrom(getDeclaringClass())) {
+            return true;
+        }
+        if (getDeclaringClass().isAssignableFrom(otherMember.getDeclaringClass())) {
+            return true;
+        }
+        return false;
     }
 
     @Override
-    boolean isBridgeMethod() { }
+    boolean isBridgeMethod() {
+        return false;
+    }
 
     @Override
     protected int getModifiers() {
-        
+        return field.getModifiers();
     }
 
     /**
      * @return the underlying java Field
      */
     public Field getField() {
-        
+        return field;
     }
 
     /**
@@ -62,23 +76,23 @@ public class FrameworkField extends FrameworkMember<FrameworkField> {
      */
     @Override
     public Class<?> getType() {
-        
+        return field.getType();
     }
     
     @Override
     public Class<?> getDeclaringClass() {
-        
+        return field.getDeclaringClass();
     }
 
     /**
      * Attempts to retrieve the value of this field on {@code target}
      */
     public Object get(Object target) throws IllegalArgumentException, IllegalAccessException {
-        
+        return field.get(target);
     }
 
     @Override
     public String toString() {
-        
+        return field.toString();
     }
 }

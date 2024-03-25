@@ -29,6 +29,9 @@ public final class OrderWithValidator extends AnnotationValidator {
      */
     @Override
     public List<Exception> validateAnnotatedClass(TestClass testClass) {
-        
+        if (testClass.getAnnotation(FixMethodOrder.class) != null) {
+            return singletonList(new Exception("@FixMethodOrder cannot be combined with @OrderWith"));
+        }
+        return emptyList();
     }
 }

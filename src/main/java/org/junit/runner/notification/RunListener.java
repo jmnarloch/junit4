@@ -57,7 +57,8 @@ public class RunListener {
      *
      * @param description describes the tests to be run
      */
-    public void testRunStarted(Description description) throws Exception { }
+    public void testRunStarted(Description description) throws Exception {
+    }
 
     /**
      * Called when all tests have finished. This may be called on an
@@ -65,7 +66,8 @@ public class RunListener {
      *
      * @param result the summary of the test run, including all the tests that failed
      */
-    public void testRunFinished(Result result) throws Exception { }
+    public void testRunFinished(Result result) throws Exception {
+    }
 
     /**
      * Called when a test suite is about to be started. If this method is
@@ -81,7 +83,8 @@ public class RunListener {
      *                    (generally a class name)
      * @since 4.13
      */
-    public void testSuiteStarted(Description description) throws Exception { }
+    public void testSuiteStarted(Description description) throws Exception {
+    }
 
     /**
      * Called when a test suite has finished, whether the test suite succeeds or fails.
@@ -91,7 +94,8 @@ public class RunListener {
      * @param description the description of the test suite that just ran
      * @since 4.13
      */
-    public void testSuiteFinished(Description description) throws Exception { }
+    public void testSuiteFinished(Description description) throws Exception {
+    }
 
     /**
      * Called when an atomic test is about to be started.
@@ -99,14 +103,16 @@ public class RunListener {
      * @param description the description of the test that is about to be run
      * (generally a class and method name)
      */
-    public void testStarted(Description description) throws Exception { }
+    public void testStarted(Description description) throws Exception {
+    }
 
     /**
      * Called when an atomic test has finished, whether the test succeeds or fails.
      *
      * @param description the description of the test that just ran
      */
-    public void testFinished(Description description) throws Exception { }
+    public void testFinished(Description description) throws Exception {
+    }
 
     /**
      * Called when an atomic test fails, or when a listener throws an exception.
@@ -122,7 +128,8 @@ public class RunListener {
      *
      * @param failure describes the test that failed and the exception that was thrown
      */
-    public void testFailure(Failure failure) throws Exception { }
+    public void testFailure(Failure failure) throws Exception {
+    }
 
     /**
      * Called when an atomic test flags that it assumes a condition that is
@@ -131,7 +138,8 @@ public class RunListener {
      * @param failure describes the test that failed and the
      * {@link org.junit.AssumptionViolatedException} that was thrown
      */
-    public void testAssumptionFailure(Failure failure) { }
+    public void testAssumptionFailure(Failure failure) {
+    }
 
     /**
      * Called when a test will not be run, generally because a test method is annotated
@@ -139,7 +147,8 @@ public class RunListener {
      *
      * @param description describes the test that will not be run
      */
-    public void testIgnored(Description description) throws Exception { }
+    public void testIgnored(Description description) throws Exception {
+    }
 
 
     /**

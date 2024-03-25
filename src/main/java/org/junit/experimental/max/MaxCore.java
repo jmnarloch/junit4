@@ -39,20 +39,20 @@ public class MaxCore {
      */
     @Deprecated
     public static MaxCore forFolder(String folderName) {
-        
+        return storedLocally(new File(folderName));
     }
 
     /**
      * Create a new MaxCore from a serialized file stored at storedResults
      */
     public static MaxCore storedLocally(File storedResults) {
-        
+        return new MaxCore(storedResults);
     }
 
     private final MaxHistory history;
 
     private MaxCore(File storedResults) {
-        
+        history = MaxHistory.forFolder(storedResults);
     }
 
     /**
@@ -61,7 +61,7 @@ public class MaxCore {
      * @return a {@link Result} describing the details of the test run and the failed tests.
      */
     public Result run(Class<?> testClass) {
-        
+        return run(Request.aClass(testClass));
     }
 
     /**
@@ -71,7 +71,7 @@ public class MaxCore {
      * @return a {@link Result} describing the details of the test run and the failed tests.
      */
     public Result run(Request request) {
-        
+        return run(request, new JUnitCore());
     }
 
     /**
@@ -85,26 +85,64 @@ public class MaxCore {
      * @return a {@link Result} describing the details of the test run and the failed tests.
      */
     public Result run(Request request, JUnitCore core) {
-        
+        core.addListener(history.listener());
+        return core.run(sortRequest(request).getRunner());
     }
 
     /**
      * @return a new Request, which contains all of the same tests, but in a new order.
      */
     public Request sortRequest(Request request) {
-        
+        if (request.getRunner() instanceof Suite) {
+            Suite suite = (Suite) request.getRunner();
+            List<Description> children = suite.getDescription().getChildren();
+            if (!children.isEmpty()) {
+                List<Description> sorted = new ArrayList<Description>(children);
+                Collections.sort(sorted, history.testComparator());
+                return sortRequest(new SortingRequest(request, sorted));
+            }
+        }
+        return request;
     }
 
     private Request constructLeafRequest(List<Description> leaves) {
-        
+        final List<Runner> runners = new ArrayList<Runner>();
+        for (Description each : leaves) {
+            runners.add(buildRunner(each));
+        }
+        return new Request() {
+            @Override
+            public Runner getRunner() {
+                try {
+                    return new Suite((Class<?>) null, runners) {
+                    };
+                } catch (InitializationError e) {
+                    return new ErrorReportingRunner(null, e);
+                }
+            }
+        };
     }
 
     private Runner buildRunner(Description each) {
+        if (each.toString().equals("warning(junit.framework.TestSuite$1)")) {
+            return warning("Malformed JUnit 3 test suite: " + each.getChildren().get(0));
+        } else if (each.toString().startsWith(MALFORMED_JUNIT_3_TEST_CLASS_PREFIX)) {
+            return buildRunner(each.getChildren().get(0));
+        } else if (each.toString().startsWith("TestSuite with 0 tests")) {
+            return new JUnit38ClassRunner(new TestSuite());
+        } else if (!each.toString().startsWith("warning(")) {
+            return Request.classWithoutSuiteMethod(each.getTestClass()).getRunner();
+        }
         
+        return null;
     }
 
     private Class<?> getMalformedTestClass(Description each) {
-        
+        try {
+            return Class.forName(each.toString().replace(MALFORMED_JUNIT_3_TEST_CLASS_PREFIX, ""));
+        } catch (ClassNotFoundException e) {
+            return null;
+        }
     }
 
     /**
@@ -113,14 +151,24 @@ public class MaxCore {
      *         specified in the class comment.
      */
     public List<Description> sortedLeavesForTest(Request request) {
-        
+        return findLeaves(sortRequest(request));
     }
 
     private List<Description> findLeaves(Request request) {
-        
+        List<Description> results = new ArrayList<Description>();
+        findLeaves(null, request.getRunner().getDescription(), results);
+        return results;
     }
 
     private void findLeaves(Description parent, Description description, List<Description> results) {
-        
+        if (description.getChildren().isEmpty()) {
+            if (history.wasRun(description)) {
+                results.add(parent.childlessCopy());
+            }
+        } else {
+            for (Description each : description.getChildren()) {
+                findLeaves(description, each, results);
+            }
+        }
     }
 }

@@ -16,28 +16,31 @@ class ExpectedExceptionMatcherBuilder {
     private final List<Matcher<?>> matchers = new ArrayList<Matcher<?>>();
 
     void add(Matcher<?> matcher) {
-        
+        matchers.add(matcher);
     }
 
     boolean expectsThrowable() {
-        
+        return !matchers.isEmpty();
     }
 
     Matcher<Throwable> build() {
-        
+        return isThrowable(allOfTheMatchers());
     }
 
     private Matcher<Throwable> allOfTheMatchers() {
-        
+        if (matchers.size() == 1) {
+            return cast(matchers.get(0));
+        }
+        return allOf(matchers);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     private List<Matcher<? super Throwable>> castedMatchers() {
-        
+        return (Matcher<Throwable>) singleMatcher;
     }
 
     @SuppressWarnings("unchecked")
     private Matcher<Throwable> cast(Matcher<?> singleMatcher) {
-        
+        return (Matcher<Throwable>) singleMatcher;
     }
 }

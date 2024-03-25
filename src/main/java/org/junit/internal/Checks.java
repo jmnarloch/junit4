@@ -3,7 +3,8 @@ package org.junit.internal;
 /** @since 4.13 */
 public final class Checks {
 
-    private Checks() { }
+    private Checks() {
+    }
 
     /**
      * Checks that the given value is not {@code null}.
@@ -13,7 +14,10 @@ public final class Checks {
      * @throws NullPointerException if {@code value} is {@code null}
      */
     public static <T> T notNull(T value) {
-        
+        if (value == null) {
+            throw new NullPointerException();
+        }
+        return value;
     }
 
     /**
@@ -26,6 +30,9 @@ public final class Checks {
      * @throws NullPointerException if {@code value} is {@code null}
      */
     public static <T> T notNull(T value, String message) {
-        
+        if (value == null) {
+            throw new NullPointerException(message);
+        }
+        return value;
     }
 }

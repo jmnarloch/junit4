@@ -14,7 +14,7 @@ class SerializableValueDescription implements Serializable {
     private final String value;
 
     private SerializableValueDescription(Object value) {
-        
+        this.value = String.valueOf(value);
     }
 
     /**
@@ -24,11 +24,15 @@ class SerializableValueDescription implements Serializable {
      * the SerializableValueDescription representation of it if it is not.
      */
     static Object asSerializableValue(Object value) {
-        
+        if (value == null || value instanceof Serializable) {
+            return value;
+        } else {
+            return new SerializableValueDescription(value);
+        }
     }
 
     @Override
     public String toString() {
-        
+        return value;
     }
 }

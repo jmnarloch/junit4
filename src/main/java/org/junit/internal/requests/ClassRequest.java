@@ -15,23 +15,39 @@ public class ClassRequest extends MemoizingRequest {
     private final boolean canUseSuiteMethod;
 
     public ClassRequest(Class<?> testClass, boolean canUseSuiteMethod) {
-        
+        this.fTestClass = testClass;
+        this.canUseSuiteMethod = canUseSuiteMethod;
     }
 
     public ClassRequest(Class<?> testClass) {
-        
+        this(testClass, true);
     }
 
     @Override
     protected Runner createRunner() {
-        
+        RunnerBuilder builder = new AllDefaultPossibilitiesBuilder() {
+            @Override
+            public Runner runnerForClass(Class<?> testClass) throws Throwable {
+                if (canUseSuiteMethod) {
+                    try {
+                        Runner suite = new SuiteMethodBuilder().build(new CustomSuiteMethodBuilder(), testClass);
+                        if (suite != null) {
+                            return suite;
+                        }
+                    } catch (Throwable e) {
+                    }
+                }
+                return null;
+            }
+        };
+        return new SuiteMethodBuilder().runnerForClass(fTestClass, builder);
     }
 
     private class CustomAllDefaultPossibilitiesBuilder extends AllDefaultPossibilitiesBuilder {
 
         @Override
         protected RunnerBuilder suiteMethodBuilder() {
-            
+            return new CustomSuiteMethodBuilder();
         }
     }
 
@@ -44,7 +60,11 @@ public class ClassRequest extends MemoizingRequest {
 
         @Override
         public Runner runnerForClass(Class<?> testClass) throws Throwable {
-            
+            if (canUseSuiteMethod) {
+                return super.runnerForClass(testClass);
+            } else {
+                return null;
+            }
         }
     }
 }

@@ -16,7 +16,7 @@ public class Computer {
      * Returns a new default computer, which runs tests in serial order
      */
     public static Computer serial() {
-        
+        return new Computer();
     }
 
     /**
@@ -25,13 +25,23 @@ public class Computer {
      */
     public Runner getSuite(final RunnerBuilder builder,
             Class<?>[] classes) throws InitializationError {
-        
+        return new Suite(new RunnerBuilder() {
+            @Override
+            public Runner runnerForClass(Class<?> testClass) throws Throwable {
+                return getRunner(builder, testClass);
+            }
+        }, classes) {
+            @Override
+            protected void runChild(final Runner runner, RunNotifier notifier) {
+                runner.run();
+            }
+        };
     }
 
     /**
      * Create a single-class runner for {@code testClass}, using {@code builder}
      */
     protected Runner getRunner(RunnerBuilder builder, Class<?> testClass) throws Throwable {
-        
+        return builder.runnerForClass(testClass);
     }
 }

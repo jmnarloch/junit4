@@ -38,6 +38,6 @@ public abstract class Runner implements Describable {
      * @return the number of tests to be run by the receiver
      */
     public int testCount() {
-        
+        return getDescription().testCount();
     }
 }

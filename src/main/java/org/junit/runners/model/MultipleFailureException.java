@@ -26,31 +26,47 @@ public class MultipleFailureException extends Exception {
     private final List<Throwable> fErrors;
 
     public MultipleFailureException(List<Throwable> errors) {
-        
+        if (errors.isEmpty()) {
+            throw new IllegalArgumentException(
+            "List of Throwables must not be empty");
+        }
+        this.fErrors = new ArrayList<Throwable>(errors.size());
+        this.fErrors.addAll(errors);
     }
 
     public List<Throwable> getFailures() {
-        
+        return Collections.unmodifiableList(fErrors);
     }
 
     @Override
     public String getMessage() {
-        
+        StringBuilder sb = new StringBuilder(
+        String.format("There were %d errors:", fErrors.size()));
+        for (Throwable e: fErrors) {
+            sb.append(String.format("%n  %s(%s)", e.getClass().getName(), e.getMessage()));
+        }
+        return sb.toString();
     }
 
     @Override
     public void printStackTrace() {
-        
+        for (Throwable e: fErrors) {
+            e.printStackTrace();
+        }
     }
     
     @Override
     public void printStackTrace(PrintStream s) {
-        
+        for (Throwable e: fErrors) {
+            e.printStackTrace(s);
+        }
     }
     
     @Override
     public void printStackTrace(PrintWriter s) {
-        
+        for (Throwable e: fErrors) {
+            e.printStackTrace(s);
+        }
     }
     
     /**
@@ -64,6 +80,14 @@ public class MultipleFailureException extends Exception {
      */
     @SuppressWarnings("deprecation")
     public static void assertEmpty(List<Throwable> errors) throws Exception {
+        if (errors.isEmpty()) {
+            return;
+        }
+        if (errors.size() == 1) {
+            throw Throwables.rethrowAsException(errors.get(0));
+        }
         
+        List<Throwable> toThrow = new ArrayList<Throwable>(errors);
+        throw new org.junit.internal.runners.model.MultipleFailureException(toThrow);
     }
 }

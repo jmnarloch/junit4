@@ -66,19 +66,42 @@ public abstract class RunnerBuilder {
      * @return a Runner
      */
     public Runner safeRunnerForClass(Class<?> testClass) {
-        
+        try {
+            Runner runner = runnerForClass(testClass);
+            if (runner != null) {
+                configureRunner(runner);
+            }
+            return runner;
+        } catch (Throwable e) {
+            return new ErrorReportingRunner(testClass, e);
+        }
     }
 
     private void configureRunner(Runner runner) throws InvalidOrderingException {
-        
+        Description description = runner.getDescription();
+        if (description != null) {
+            OrderWith orderWith = description.getAnnotation(OrderWith.class);
+            if (orderWith != null) {
+                Ordering ordering = Ordering.definedBy(orderWith.value(), description);
+                ordering.apply(runner);
+            }
+        }
     }
 
     Class<?> addParent(Class<?> parent) throws InitializationError {
+        if (parent == null) {
+            return null;
+        }
         
+        if (!parents.add(parent)) {
+            throw new InitializationError(String.format("class '%s' (possibly indirectly) contains itself as a SuiteClass", parent.getName()));
+        }
+        
+        return parent;
     }
 
     void removeParent(Class<?> klass) {
-        
+        parents.remove(klass);
     }
 
     /**
@@ -89,15 +112,28 @@ public abstract class RunnerBuilder {
      */
     public List<Runner> runners(Class<?> parent, Class<?>[] children)
             throws InitializationError {
+        addParent(parent);
         
+        try {
+            return runners(children);
+        } finally {
+            removeParent(parent);
+        }
     }
 
     public List<Runner> runners(Class<?> parent, List<Class<?>> children)
             throws InitializationError {
-        
+        return runners(parent, children.toArray(new Class<?>[0]));
     }
 
     private List<Runner> runners(Class<?>[] children) {
-        
+        List<Runner> runners = new ArrayList<Runner>();
+        for (Class<?> each : children) {
+            Runner childRunner = safeRunnerForClass(each);
+            if (childRunner != null) {
+                runners.add(childRunner);
+            }
+        }
+        return runners;
     }
 }

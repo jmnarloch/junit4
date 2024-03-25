@@ -54,7 +54,8 @@ public class DisableOnDebug implements TestRule {
      * @param rule to disable during debugging
      */
     public DisableOnDebug(TestRule rule) {
-        
+        this.rule = rule;
+        debugging = isDebugging();
     }
 
     /**
@@ -65,14 +66,19 @@ public class DisableOnDebug implements TestRule {
      *            arguments provided to the Java runtime
      */
     DisableOnDebug(TestRule rule, List<String> inputArguments) {
-        
+        this.rule = rule;
+        debugging = isDebugging(inputArguments);
     }
 
     /**
      * @see TestRule#apply(Statement, Description)
      */
     public Statement apply(Statement base, Description description) {
-        
+        if (debugging) {
+            return base;
+        } else {
+            return rule.apply(base, description);
+        }
     }
 
     /**
@@ -96,7 +102,12 @@ public class DisableOnDebug implements TestRule {
      *         otherwise.
      */
     private static boolean isDebugging(List<String> arguments) {
-        
+        for (final String argument : arguments) {
+            if ("-Xdebug".equals(argument) || argument.startsWith("-agentlib:jdwp")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -108,7 +119,7 @@ public class DisableOnDebug implements TestRule {
      *         otherwise
      */
     public boolean isDebugging() {
-        
+        return debugging;
     }
 
 }

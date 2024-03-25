@@ -76,17 +76,20 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
 
     private volatile RunnerScheduler scheduler = new RunnerScheduler() {
         public void schedule(Runnable childStatement) {
-            
-        }
+        childStatement.run();
+    }
 
-        public void finished() { }
+        public void finished() {
+        // do nothing by default
+    }
     };
 
     /**
      * Constructs a new {@code ParentRunner} that will run {@code @TestClass}
      */
     protected ParentRunner(Class<?> testClass) throws InitializationError {
-        
+        this.testClass = createTestClass(testClass);
+        validate();
     }
 
    /**
@@ -95,7 +98,8 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
     * @since 4.13
     */
     protected ParentRunner(TestClass testClass) throws InitializationError {
-       
+        this.testClass = notNull(testClass);
+        validate();
     }
 
     /**
@@ -104,7 +108,7 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
      */
     @Deprecated
     protected TestClass createTestClass(Class<?> testClass) {
-        
+        return new TestClass(testClass);
     }
 
     //
@@ -141,11 +145,18 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
      * {@code public static void} with no arguments.
      */
     protected void collectInitializationErrors(List<Throwable> errors) {
-        
+        validatePublicVoidNoArgMethods(BeforeClass.class, true, errors);
+        validatePublicVoidNoArgMethods(AfterClass.class, true, errors);
+        validateClassRules(errors);
+        applyValidators(errors);
     }
 
     private void applyValidators(List<Throwable> errors) {
-        
+        if (getTestClass().getJavaClass() != null) {
+            for (TestClassValidator each : VALIDATORS) {
+                errors.addAll(each.validateTestClass(getTestClass()));
+            }
+        }
     }
 
     /**
@@ -161,11 +172,16 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
      */
     protected void validatePublicVoidNoArgMethods(Class<? extends Annotation> annotation,
             boolean isStatic, List<Throwable> errors) {
+        List<FrameworkMethod> methods = getTestClass().getAnnotatedMethods(annotation);
         
+        for (FrameworkMethod eachTestMethod : methods) {
+            eachTestMethod.validatePublicVoidNoArg(isStatic, errors);
+        }
     }
 
     private void validateClassRules(List<Throwable> errors) {
-        
+        CLASS_RULE_VALIDATOR.validate(getTestClass(), errors);
+        CLASS_RULE_METHOD_VALIDATOR.validate(getTestClass(), errors);
     }
 
     /**
@@ -194,11 +210,23 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
      * @return {@code Statement}
      */
     protected Statement classBlock(final RunNotifier notifier) {
-        
+        Statement statement = childrenInvoker(notifier);
+        if (!areAllChildrenIgnored()) {
+            statement = withClassRules(statement);
+            statement = withBeforeClasses(statement);
+            statement = withAfterClasses(statement);
+            statement = withInterruptIsolation(statement);
+        }
+        return statement;
     }
 
     private boolean areAllChildrenIgnored() {
-        
+        for (T child : getFilteredChildren()) {
+            if (!isIgnored(child)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -207,7 +235,10 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
      * Exception, stop execution and pass the exception on.
      */
     protected Statement withBeforeClasses(Statement statement) {
-        
+        List<FrameworkMethod> befores = testClass
+        .getAnnotatedMethods(BeforeClass.class);
+        return befores.isEmpty() ? statement :
+        new RunBefores(statement, befores, null);
     }
 
     /**
@@ -218,7 +249,10 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
      * {@link org.junit.runners.model.MultipleFailureException}.
      */
     protected Statement withAfterClasses(Statement statement) {
-        
+        List<FrameworkMethod> afters = testClass
+        .getAnnotatedMethods(AfterClass.class);
+        return afters.isEmpty() ? statement :
+        new RunAfters(statement, afters, null);
     }
 
     /**
@@ -231,7 +265,9 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
      *         found, or the base statement
      */
     private Statement withClassRules(Statement statement) {
-        
+        List<TestRule> classRules = classRules();
+        return classRules.isEmpty() ? statement :
+        new RunRules(statement, classRules, getDescription());
     }
 
     /**
@@ -239,7 +275,10 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
      *         each method in the tested class.
      */
     protected List<TestRule> classRules() {
-        
+        ClassRuleCollector collector = new ClassRuleCollector();
+        testClass.collectAnnotatedMethodValues(null, ClassRule.class, TestRule.class, collector);
+        testClass.collectAnnotatedFieldValues(null, ClassRule.class, TestRule.class, collector);
+        return collector.getOrderedRules();
     }
 
     /**
@@ -248,14 +287,28 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
      * filter and sort)
      */
     protected Statement childrenInvoker(final RunNotifier notifier) {
-        
+        return new Statement() {
+            @Override
+            public void evaluate() {
+                runChildren(notifier);
+            }
+        };
     }
 
     /**
      * @return a {@link Statement}: clears interrupt status of current thread after execution of statement
      */
     protected final Statement withInterruptIsolation(final Statement statement) {
-        
+        return new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                try {
+                    statement.evaluate();
+                } finally {
+                    Thread.interrupted(); // clearing interruption flag
+                }
+            }
+        };
     }
 
     /**
@@ -265,17 +318,30 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
      * <p>{@link BlockJUnit4ClassRunner}, for example, overrides this method to
      * filter tests based on the {@link Ignore} annotation.
      */
-    protected boolean isIgnored(T child) { }
+    protected boolean isIgnored(T child) {
+        return false;
+    }
 
     private void runChildren(final RunNotifier notifier) {
-        
+        final RunnerScheduler currentScheduler = scheduler;
+        try {
+            for (final T each : getFilteredChildren()) {
+                currentScheduler.schedule(new Runnable() {
+                    public void run() {
+                        ParentRunner.this.runChild(each, notifier);
+                    }
+                });
+            }
+        } finally {
+            currentScheduler.finished();
+        }
     }
 
     /**
      * Returns a name used to describe this Runner
      */
     protected String getName() {
-        
+        return testClass.getName();
     }
 
     //
@@ -286,7 +352,7 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
      * Returns a {@link TestClass} object wrapping the class to be executed.
      */
     public final TestClass getTestClass() {
-        
+        return testClass;
     }
 
     /**
@@ -294,7 +360,17 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
      */
     protected final void runLeaf(Statement statement, Description description,
             RunNotifier notifier) {
-        
+        EachTestNotifier eachNotifier = new EachTestNotifier(notifier, description);
+        eachNotifier.fireTestStarted();
+        try {
+            statement.evaluate();
+        } catch (AssumptionViolatedException e) {
+            eachNotifier.addFailedAssumption(e);
+        } catch (Throwable e) {
+            eachNotifier.addFailure(e);
+        } finally {
+            eachNotifier.fireTestFinished();
+        }
     }
 
     /**
@@ -302,7 +378,7 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
      *         description.
      */
     protected Annotation[] getRunnerAnnotations() {
-        
+        return testClass.getAnnotations();
     }
 
     //
@@ -311,12 +387,31 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
 
     @Override
     public Description getDescription() {
-        
+        Description spec = Description.createSuiteDescription(getName(), getRunnerAnnotations());
+        List<T> children = getFilteredChildren();
+        for (T child : children) {
+            spec.addChild(describeChild(child));
+        }
+        return spec;
     }
 
     @Override
     public void run(final RunNotifier notifier) {
-        
+        EachTestNotifier testNotifier = new EachTestNotifier(notifier,
+        getDescription());
+        testNotifier.fireTestSuiteStarted();
+        try {
+            Statement statement = classBlock(notifier);
+            statement.evaluate();
+        } catch (AssumptionViolatedException e) {
+            testNotifier.addFailedAssumption(e);
+        } catch (StoppedByUserException e) {
+            throw e;
+        } catch (Throwable e) {
+            testNotifier.addFailure(e);
+        } finally {
+            testNotifier.fireTestSuiteFinished();
+        }
     }
 
     //
@@ -324,11 +419,54 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
     //
 
     public void filter(Filter filter) throws NoTestsRemainException {
-        
+        if (filter == Filter.ALL) {
+            childrenLock.lock();
+            try {
+                filteredChildren = null;
+            } finally {
+                childrenLock.unlock();
+            }
+        } else {
+            List<T> children = new ArrayList<T>(getFilteredChildren());
+            List<T> excluded = new ArrayList<T>();
+            for (T child : children) {
+                if (shouldRun(filter, child)) {
+                    Description description = describeChild(child);
+                    if (!filter.shouldRun(description)) {
+                        excluded.add(child);
+                    }
+                }
+            }
+            children.removeAll(excluded);
+            
+            childrenLock.lock();
+            try {
+                if (children.isEmpty()) {
+                    throw new NoTestsRemainException();
+                }
+                filteredChildren = Collections.unmodifiableList(children);
+            } finally {
+                childrenLock.unlock();
+            }
+        }
     }
 
     public void sort(Sorter sorter) {
+        if (shouldNotReorder()) {
+            return;
+        }
         
+        childrenLock.lock();
+        try {
+            for (T each : getFilteredChildren()) {
+                sorter.apply(each);
+            }
+            List<T> sortedChildren = new ArrayList<T>(getFilteredChildren());
+            Collections.sort(sortedChildren, comparator(sorter));
+            filteredChildren = Collections.unmodifiableList(sortedChildren);
+        } finally {
+            childrenLock.unlock();
+        }
     }
 
     /**
@@ -337,7 +475,7 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
      * @since 4.13
      */
     public void order(Orderer orderer) throws InvalidOrderingException {
-        
+        orderer.apply(getDescription());
     }
 
     //
@@ -345,24 +483,41 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
     //
 
     private boolean shouldNotReorder() {
-        // If the test specifies a specific order, do not reorder.
-        
+        return getTestClass().getJavaClass().getAnnotation(FixMethodOrder.class) == null;
     }
 
     private void validate() throws InitializationError {
-        
+        List<Throwable> errors = new ArrayList<Throwable>();
+        collectInitializationErrors(errors);
+        if (!errors.isEmpty()) {
+            throw new InvalidTestClassError(testClass.getJavaClass(), errors);
+        }
     }
 
     private List<T> getFilteredChildren() {
-        
+        if (filteredChildren == null) {
+            childrenLock.lock();
+            try {
+                if (filteredChildren == null) {
+                    filteredChildren = Collections.unmodifiableList(new ArrayList<T>(getChildren()));
+                }
+            } finally {
+                childrenLock.unlock();
+            }
+        }
+        return filteredChildren;
     }
 
     private boolean shouldRun(Filter filter, T each) {
-        
+        return filter.shouldRun(describeChild(each));
     }
 
     private Comparator<? super T> comparator(final Sorter sorter) {
-        
+        return new Comparator<T>() {
+            public int compare(T o1, T o2) {
+                return sorter.compare(describeChild(o1), describeChild(o2));
+            }
+        };
     }
 
     /**
@@ -370,18 +525,25 @@ public abstract class ParentRunner<T> extends Runner implements Filterable,
      * of children.  Highly experimental feature that may change.
      */
     public void setScheduler(RunnerScheduler scheduler) {
-        
+        this.scheduler = scheduler;
     }
 
     private static class ClassRuleCollector implements MemberValueConsumer<TestRule> {
         final List<RuleContainer.RuleEntry> entries = new ArrayList<RuleContainer.RuleEntry>();
 
         public void accept(FrameworkMember<?> member, TestRule value) {
-            
+            entries.add(new RuleContainer.RuleEntry<TestRule>(member, value));
         }
 
         public List<TestRule> getOrderedRules() {
+            Collections.sort(entries, RuleContainer.RULE_COMPARATOR);
             
+            List<TestRule> classRules = new ArrayList<TestRule>();
+            for (RuleContainer.RuleEntry entry : entries) {
+                classRules.add(entry.getRule());
+            }
+            
+            return classRules;
         }
     }
 }

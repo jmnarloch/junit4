@@ -40,11 +40,29 @@ import org.junit.runners.model.Statement;
  */
 public abstract class ExternalResource implements TestRule {
     public Statement apply(Statement base, Description description) {
-        
+        return statement(base);
     }
 
     private Statement statement(final Statement base) {
-        
+        return new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                before();
+                List<Throwable> errors = new ArrayList<Throwable>();
+                try {
+                    base.evaluate();
+                } catch (Throwable t) {
+                    errors.add(t);
+                } finally {
+                    try {
+                        after();
+                    } catch (Throwable t) {
+                        errors.add(t);
+                    }
+                }
+                MultipleFailureException.assertEmpty(errors);
+            }
+        };
     }
 
     /**
@@ -52,10 +70,13 @@ public abstract class ExternalResource implements TestRule {
      *
      * @throws Throwable if setup fails (which will disable {@code after}
      */
-    protected void before() throws Throwable { }
+    protected void before() throws Throwable {
+    }
 
     /**
      * Override to tear down your specific external resource.
      */
-    protected void after() { }
+    protected void after() {
+        // do nothing
+    }
 }

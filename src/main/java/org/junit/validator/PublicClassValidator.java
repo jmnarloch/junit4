@@ -23,6 +23,11 @@ public class PublicClassValidator implements TestClassValidator {
      *         exception otherwise.
      */
     public List<Exception> validateTestClass(TestClass testClass) {
-        
+        if (testClass.isPublic()) {
+            return NO_VALIDATION_ERRORS;
+        } else {
+            return singletonList(new Exception("The class "
+            + testClass.getName() + " is not public."));
+        }
     }
 }

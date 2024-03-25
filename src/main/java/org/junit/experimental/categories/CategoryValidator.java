@@ -42,10 +42,21 @@ public final class CategoryValidator extends AnnotationValidator {
      */
     @Override
     public List<Exception> validateAnnotatedMethod(FrameworkMethod method) {
-        
+        List<Exception> errors = new ArrayList<Exception>();
+        Annotation[] annotations = method.getAnnotations();
+        for (Annotation annotation : annotations) {
+            for (Class<?> clazz : INCOMPATIBLE_ANNOTATIONS) {
+                if (annotation.annotationType().isAssignableFrom(clazz)) {
+                    addErrorMessage(errors, clazz);
+                }
+            }
+        }
+        return unmodifiableList(errors);
     }
 
     private void addErrorMessage(List<Exception> errors, Class<?> clazz) {
-        
+        String message = String.format("@%s can not be combined with @Category",
+        clazz.getSimpleName());
+        errors.add(new Exception(message));
     }
 }

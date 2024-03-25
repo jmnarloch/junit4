@@ -32,21 +32,22 @@ public class Failure implements Serializable {
      * @param thrownException the exception that was thrown while running the test
      */
     public Failure(Description description, Throwable thrownException) {
-        
+        this.fThrownException = thrownException;
+        this.fDescription = description;
     }
 
     /**
      * @return a user-understandable label for the test
      */
     public String getTestHeader() {
-        
+        return fDescription.getDisplayName();
     }
 
     /**
      * @return the raw description of the context of the failure.
      */
     public Description getDescription() {
-        
+        return fDescription;
     }
 
     /**
@@ -54,19 +55,19 @@ public class Failure implements Serializable {
      */
 
     public Throwable getException() {
-        
+        return fThrownException;
     }
 
     @Override
     public String toString() {
-        
+        return getTestHeader() + ": " + fThrownException.getMessage();
     }
 
     /**
      * Gets the printed form of the exception and its stack trace.
      */
     public String getTrace() {
-        
+        return Throwables.getStacktrace(getException());
     }
 
     /**
@@ -75,7 +76,7 @@ public class Failure implements Serializable {
      * the test method call.
      */
     public String getTrimmedTrace() {
-        
+        return Throwables.getTrimmedStackTrace(getException());
     }
 
     /**
@@ -84,6 +85,6 @@ public class Failure implements Serializable {
      * @return the message of the thrown exception
      */
     public String getMessage() {
-        
+        return getException().getMessage();
     }
 }

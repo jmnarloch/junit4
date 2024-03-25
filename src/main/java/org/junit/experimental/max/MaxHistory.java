@@ -31,12 +31,30 @@ public class MaxHistory implements Serializable {
      * will be saved to {@code file}.
      */
     public static MaxHistory forFolder(File file) {
-        
+        if (file == null) {
+            throw new IllegalArgumentException(
+            "For MaxHistory.forFolder, file cannot be null");
+        }
+        return new MaxHistory(new File(file, "surefire"));
     }
 
     private static MaxHistory readHistory(File storedResults)
             throws CouldNotReadCoreException {
-        
+        try {
+            FileInputStream file = new FileInputStream(storedResults);
+            try {
+                ObjectInputStream stream = new ObjectInputStream(file);
+                try {
+                    return (MaxHistory) stream.readObject();
+                } finally {
+                    stream.close();
+                }
+            } finally {
+                file.close();
+            }
+        } catch (Exception e) {
+            throw new CouldNotReadCoreException(e);
+        }
     }
 
     /*
@@ -49,31 +67,39 @@ public class MaxHistory implements Serializable {
     private final File fHistoryStore;
 
     private MaxHistory(File storedResults) {
-        
+        fHistoryStore = storedResults;
     }
 
     private void save() throws IOException {
-        
+        ObjectOutputStream stream = null;
+        try {
+            stream = new ObjectOutputStream(new FileOutputStream(fHistoryStore));
+            stream.writeObject(this);
+        } finally {
+            if (stream != null) {
+                stream.close();
+            }
+        }
     }
 
     Long getFailureTimestamp(Description key) {
-        
+        return fFailureTimestamps.get(key.toString());
     }
 
     void putTestFailureTimestamp(Description key, long end) {
-        
+        fFailureTimestamps.put(key.toString(), end);
     }
 
     boolean isNewTest(Description key) {
-        
+        return !fDurations.containsKey(key.toString());
     }
 
     Long getTestDuration(Description key) {
-        
+        return fDurations.get(key.toString());
     }
 
     void putTestDuration(Description description, long duration) {
-        
+        fDurations.put(description.toString(), duration);
     }
 
     private final class RememberingListener extends RunListener {
@@ -83,34 +109,58 @@ public class MaxHistory implements Serializable {
 
         @Override
         public void testStarted(Description description) throws Exception {
-             // Get most accurate
+            // Get most accurate
             // possible time
+            starts.put(description, System.currentTimeMillis());
         }
 
         @Override
         public void testFinished(Description description) throws Exception {
-            
+            long end = System.currentTimeMillis();
+            putTestDuration(description, end - starts.get(description));
         }
 
         @Override
         public void testFailure(Failure failure) throws Exception {
-            
+            Description description = failure.getDescription();
+            putTestFailureTimestamp(description, System.currentTimeMillis());
         }
 
         @Override
         public void testRunFinished(Result result) throws Exception {
-            
+            for (Description description : result.getRunOrder()) {
+                if (description.isTest()) {
+                    putTestDuration(description, result.getRunTime(description));
+                }
+            }
+            putTestFailureTimestamp(result);
         }
     }
 
     private class TestComparator implements Comparator<Description> {
         public int compare(Description o1, Description o2) {
             // Always prefer new tests
+            int result = fFailureTimestamps.get(o1).compareTo(fFailureTimestamps.get(o2));
+            if (result != 0) {
+                return result;
+            }
             
+            // Always prefer tests that have been run
+            boolean o1New = fDurations.get(o1) == null;
+            boolean o2New = fDurations.get(o2) == null;
+            if (o1New || o2New) {
+                if (o1New && o2New) {
+                    return 0;
+                }
+                return o1New ? 1 : -1;
+            }
+            
+            // Always prefer short tests
+            return fDurations.get(o1).compareTo(fDurations.get(o2));
         }
 
         private Long getFailure(Description key) {
-            
+            return fFailureTimestamps.get(key.toString());
         }
     }
 
@@ -119,7 +169,7 @@ public class MaxHistory implements Serializable {
      *         results reported.
      */
     public RunListener listener() {
-        
+        return new RememberingListener();
     }
 
     /**
@@ -127,6 +177,6 @@ public class MaxHistory implements Serializable {
      *         rules, as described in the {@link MaxCore} class comment.
      */
     public Comparator<Description> testComparator() {
-        
+        return new TestComparator();
     }
 }

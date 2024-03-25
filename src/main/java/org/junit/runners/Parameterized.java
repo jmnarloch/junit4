@@ -300,22 +300,31 @@ public class Parameterized extends Suite {
      * Only called reflectively. Do not use programmatically.
      */
     public Parameterized(Class<?> klass) throws Throwable {
-        
+        this(klass, new RunnersFactory(klass));
     }
 
     private Parameterized(Class<?> klass, RunnersFactory runnersFactory) throws Exception {
-        
+        super(klass, runnersFactory.createRunners());
     }
 
     private void validateBeforeParamAndAfterParamMethods(Integer parameterCount)
             throws InvalidTestClassError {
-        
+        List<Throwable> errors = new ArrayList<Throwable>();
+        validatePublicStaticVoidMethods(Parameterized.BeforeParam.class, parameterCount, errors);
+        validatePublicStaticVoidMethods(Parameterized.AfterParam.class, parameterCount, errors);
+        if (!errors.isEmpty()) {
+            throw new InvalidTestClassError(getTestClass().getJavaClass(), errors);
+        }
     }
 
     private void validatePublicStaticVoidMethods(
             Class<? extends Annotation> annotation, Integer parameterCount,
             List<Throwable> errors) {
-        
+        List<FrameworkMethod> methods = getTestClass().getAnnotatedMethods(annotation);
+        for (FrameworkMethod eachTestMethod : methods) {
+            eachTestMethod.validatePublicVoid(true, errors);
+            validateOneParameterCount(eachTestMethod, errors, annotation, parameterCount);
+        }
     }
 
     private static class AssumptionViolationRunner extends Runner {
@@ -324,17 +333,18 @@ public class Parameterized extends Suite {
 
         AssumptionViolationRunner(TestClass testClass, String methodName,
                 AssumptionViolatedException exception) {
-            
+            this.exception = exception;
+            description = testClass.method(methodName).getDescription();
         }
 
         @Override
         public Description getDescription() {
-            
+            return description;
         }
 
         @Override
         public void run(RunNotifier notifier) {
-            
+            notifier.fireTestAssumptionFailed(description, exception);
         }
     }
 
@@ -348,58 +358,124 @@ public class Parameterized extends Suite {
         private final Runner runnerOverride;
 
         private RunnersFactory(Class<?> klass) throws Throwable {
-            
+            this.testClass = new TestClass(klass);
+            this.parametersMethod = getParametersMethod(testClass);
+            this.allParameters = allParameters(testClass, parametersMethod);
+            this.parameterCount = allParameters.size();
+            this.runnerOverride = computeRunnerTest(klass);
         }
 
         private List<Runner> createRunners() throws Exception {
-            
+            try {
+                return createRunnersForParameters(allParameters, parametersMethod.getAnnotation(
+                Parameterized.Parameters.class).name(), getParametersRunnerFactory());
+            } catch (ClassCastException e) {
+                throw parametersMethodReturnedWrongType(testClass, parametersMethod);
+            }
         }
 
         private ParametersRunnerFactory getParametersRunnerFactory()
                 throws InstantiationException, IllegalAccessException {
-            
+            UseParametersRunnerFactory annotation = testClass
+            .getJavaClass().getAnnotation(UseParametersRunnerFactory.class);
+            if (annotation != null) {
+                return annotation.value().newInstance();
+            } else {
+                return DEFAULT_FACTORY;
+            }
         }
 
         private TestWithParameters createTestWithNotNormalizedParameters(
                 String pattern, int index, Object parametersOrSingleParameter) {
-            
+            Object[] parameters = normalizeParameters(parametersOrSingleParameter);
+            return createTestWithParameters(testClass, pattern, index, parameters);
         }
 
         private static Object[] normalizeParameters(Object parametersOrSingleParameter) {
-            
+            if (parametersOrSingleParameter instanceof Collection<?>) {
+                return ((Collection<?>) parametersOrSingleParameter).toArray();
+            } else {
+                return (Object[]) parametersOrSingleParameter;
+            }
         }
 
         @SuppressWarnings("unchecked")
         private static List<Object> allParameters(
                 TestClass testClass, FrameworkMethod parametersMethod) throws Throwable {
-            
+            return (List<Object>) parametersMethod.invokeExplosively(null, testClass);
         }
 
         private static FrameworkMethod getParametersMethod(TestClass testClass) throws Exception {
+            List<FrameworkMethod> methods = testClass.getAnnotatedMethods(Parameters.class);
+            for (FrameworkMethod each : methods) {
+                each.validatePublicStatic(0, false);
+            }
             
+            if (methods.size() > 1) {
+                throw new Exception("Test class can only have one method annotated with @Parameters.");
+            }
+            
+            if (methods.isEmpty()) {
+                throw new Exception("Test class must have at least one public static method annotated with @Parameters.");
+            }
+            
+            return methods.get(0);
         }
 
         private List<Runner> createRunnersForParameters(
                 Iterable<Object> allParameters, String namePattern,
                 ParametersRunnerFactory runnerFactory) throws Exception {
-            
+            try {
+                List<Runner> runners = new ArrayList<Runner>();
+                for (TestWithParameters test : createTestsForParameters(
+                allParameters, namePattern)) {
+                    runners.add(runnerFactory.createRunnerWithNotNormalizedParameters(test));
+                }
+                return runners;
+            } catch (ClassCastException e) {
+                throw parametersMethodReturnedWrongType(testClass, parametersMethod);
+            }
         }
 
         private List<TestWithParameters> createTestsForParameters(
                 Iterable<Object> allParameters, String namePattern)
                 throws Exception {
-            
+            List<TestWithParameters> tests = new ArrayList<TestWithParameters>();
+            int i = 0;
+            for (Object parametersOfSingleTest : allParameters) {
+                i++;
+                if (parametersOfSingleTest instanceof Object[]) {
+                    Object[] parameters = (Object[]) parametersOfSingleTest;
+                    if (parametersOfSingleTest instanceof Object[]) {
+                        parameters = (Object[]) parametersOfSingleTest;
+                    } else {
+                        parameters = new Object[] { parametersOfSingleTest };
+                    }
+                    tests.add(createTestWithParameters(testClass, namePattern, i, parameters));
+                } else {
+                    tests.add(createTestWithParameters(testClass, namePattern, i,
+                    new Object[] { parametersOfSingleTest }));
+                }
+            }
+            return tests;
         }
 
         private static Exception parametersMethodReturnedWrongType(
                 TestClass testClass, FrameworkMethod parametersMethod) throws Exception {
-            
+            String className = testClass.getName();
+            String methodName = parametersMethod.getName();
+            return new Exception(
+            MessageFormat.format(
+            "{0}.{1}() must return an Iterable of arrays.",
+            className, methodName));
         }
 
         private TestWithParameters createTestWithParameters(
                 TestClass testClass, String pattern, int index,
                 Object[] parameters) {
-            
+            String finalPattern = pattern.replaceAll("\\{index\\}", String.valueOf(index));
+            return new TestWithParameters(String.format("%s(%s)", finalPattern, Arrays.toString(parameters)),
+            testClass, parameters);
         }
     }
 }

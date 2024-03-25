@@ -30,7 +30,7 @@ public abstract class AnnotationValidator {
      * @since 4.12
      */
     public List<Exception> validateAnnotatedClass(TestClass testClass) {
-        
+        return NO_VALIDATION_ERRORS;
     }
 
     /**
@@ -42,8 +42,7 @@ public abstract class AnnotationValidator {
      * @since 4.12
      */
     public List<Exception> validateAnnotatedField(FrameworkField field) {
-        
-
+        return NO_VALIDATION_ERRORS;
     }
 
     /**
@@ -55,6 +54,6 @@ public abstract class AnnotationValidator {
      * @since 4.12
      */
     public List<Exception> validateAnnotatedMethod(FrameworkMethod method) {
-        
+        return NO_VALIDATION_ERRORS;
     }
 }

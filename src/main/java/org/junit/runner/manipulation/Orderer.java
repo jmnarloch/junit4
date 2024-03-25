@@ -17,7 +17,7 @@ public final class Orderer  {
     private final Ordering ordering;
 
     Orderer(Ordering delegate) {
-        
+        this.ordering = delegate;
     }
 
     /**
@@ -27,7 +27,12 @@ public final class Orderer  {
      */
     public List<Description> order(Collection<Description> descriptions)
             throws InvalidOrderingException {
-        
+        List<Description> inOrder = ordering.orderItems(new HashSet<Description>(descriptions));
+        if (!descriptions.equals(new HashSet<Description>(inOrder))) {
+            throw new InvalidOrderingException(
+            "Ordering added null, removed or duplicated description");
+        }
+        return inOrder;
     }
 
     /**
@@ -37,6 +42,9 @@ public final class Orderer  {
      * children)
      */
     public void apply(Object target) throws InvalidOrderingException {
-        
+        if (target instanceof Orderable) {
+            Orderable orderable = (Orderable) target;
+            orderable.order(this);
+        }
     }
 }

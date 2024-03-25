@@ -22,20 +22,22 @@ public class TestTimedOutException extends Exception {
      * @param timeUnit the time unit for the timeout value
      */
     public TestTimedOutException(long timeout, TimeUnit timeUnit) {
-        
+        super(String.format("test timed out after %d %s", timeout, timeUnit));
+        this.timeUnit = timeUnit;
+        this.timeout = timeout;
     }
 
     /**
      * Gets the time passed before the test was interrupted
      */
     public long getTimeout() {
-        
+        return timeout;
     }
 
     /**
      * Gets the time unit for the timeout value
      */
     public TimeUnit getTimeUnit() {
-        
+        return timeUnit;
     }
 }

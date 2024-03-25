@@ -19,7 +19,7 @@ public class JUnitMatchers {
      */
     @Deprecated
     public static <T> Matcher<Iterable<? super T>> hasItem(T element) {
-        
+        return CoreMatchers.hasItem(element);
     }
 
     /**
@@ -28,7 +28,7 @@ public class JUnitMatchers {
      */
     @Deprecated
     public static <T> Matcher<Iterable<? super T>> hasItem(Matcher<? super T> elementMatcher) {
-        
+        return CoreMatchers.<T>hasItem(elementMatcher);
     }
 
     /**
@@ -37,7 +37,7 @@ public class JUnitMatchers {
      */
     @Deprecated
     public static <T> Matcher<Iterable<T>> hasItems(T... elements) {
-        
+        return CoreMatchers.hasItems(elements);
     }
 
     /**
@@ -48,7 +48,7 @@ public class JUnitMatchers {
      */
     @Deprecated
     public static <T> Matcher<Iterable<T>> hasItems(Matcher<? super T>... elementMatchers) {
-        
+        return CoreMatchers.hasItems(elementMatchers);
     }
 
     /**
@@ -57,7 +57,7 @@ public class JUnitMatchers {
      */
     @Deprecated
     public static <T> Matcher<Iterable<T>> everyItem(final Matcher<T> elementMatcher) {
-        
+        return CoreMatchers.everyItem(elementMatcher);
     }
 
     /**
@@ -66,7 +66,7 @@ public class JUnitMatchers {
      */
     @Deprecated
     public static Matcher<java.lang.String> containsString(java.lang.String substring) {
-        
+        return CoreMatchers.containsString(substring);
     }
 
     /**
@@ -79,7 +79,7 @@ public class JUnitMatchers {
      */
     @Deprecated
     public static <T> CombinableBothMatcher<T> both(Matcher<? super T> matcher) {
-        
+        return CoreMatchers.both(matcher);
     }
 
     /**
@@ -92,7 +92,7 @@ public class JUnitMatchers {
      */
     @Deprecated
     public static <T> CombinableEitherMatcher<T> either(Matcher<? super T> matcher) {
-        
+        return CoreMatchers.either(matcher);
     }
 
     /**
@@ -100,7 +100,7 @@ public class JUnitMatchers {
      *         appends the stacktrace of the actual Throwable in case of a mismatch.
      */
     public static <T extends Throwable> Matcher<T> isThrowable(Matcher<T> throwableMatcher) {
-        
+        return StacktracePrintingMatcher.isThrowable(throwableMatcher);
     }
 
     /**
@@ -108,6 +108,6 @@ public class JUnitMatchers {
      *         appends the stacktrace of the actual Exception in case of a mismatch.
      */
     public static <T extends Exception> Matcher<T> isException(Matcher<T> exceptionMatcher) {
-        
+        return StacktracePrintingMatcher.isException(exceptionMatcher);
     }
 }

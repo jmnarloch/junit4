@@ -20,18 +20,18 @@ public class InitializationError extends Exception {
     private final List<Throwable> fErrors;
 
     public InitializationError(List<Throwable> errors) {
-        
+        this.fErrors = errors;
     }
 
     public InitializationError(Throwable... errors) {
-        
+        this(Arrays.asList(errors));
     }
 
     public InitializationError(String string) {
-        
+        this(new Exception(string));
     }
 
     public List<Throwable> getCauses() {
-        
+        return fErrors;
     }
 }

@@ -32,8 +32,9 @@ final class ReflectiveRuntimeMXBean implements RuntimeMXBean {
   }
 
   ReflectiveRuntimeMXBean(Object runtimeMxBean) {
-    
-  }
+        super();
+        this.runtimeMxBean = runtimeMxBean;
+    }
 
   /**
    * {@inheritDoc}

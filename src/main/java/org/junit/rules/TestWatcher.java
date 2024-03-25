@@ -51,51 +51,92 @@ import org.junit.runners.model.Statement;
  */
 public abstract class TestWatcher implements TestRule {
     public Statement apply(final Statement base, final Description description) {
-        
+        return new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                List<Throwable> errors = new ArrayList<Throwable>();
+                
+                startingQuietly(description, errors);
+                try {
+                    base.evaluate();
+                    succeededQuietly(description, errors);
+                } catch (org.junit.internal.AssumptionViolatedException  e) {
+                    errors.add(e);
+                    skippedQuietly(e, description, errors);
+                } catch (Throwable e) {
+                    errors.add(e);
+                    failedQuietly(e, description, errors);
+                } finally {
+                    finishedQuietly(description, errors);
+                }
+                
+                MultipleFailureException.assertEmpty(errors);
+            }
+        };
     }
 
     private void succeededQuietly(Description description,
             List<Throwable> errors) {
-        
+        try {
+            succeeded(description);
+        } catch (Throwable e) {
+            errors.add(e);
+        }
     }
 
     private void failedQuietly(Throwable e, Description description,
             List<Throwable> errors) {
-        
+        try {
+            failed(e, description);
+        } catch (Throwable e1) {
+            errors.add(e1);
+        }
     }
 
     private void skippedQuietly(
             org.junit.internal.AssumptionViolatedException e, Description description,
             List<Throwable> errors) {
-        
+        if (errors == null) {
+            skipped(e, description);
+        } else {
+            errors.add(e);
+        }
     }
 
     private void startingQuietly(Description description,
             List<Throwable> errors) {
-        
+        try {
+            starting(description);
+        } catch (Throwable e) {
+            errors.add(e);
+        }
     }
 
     private void finishedQuietly(Description description,
             List<Throwable> errors) {
-        
+        try {
+            finished(description);
+        } catch (Throwable e) {
+            errors.add(e);
+        }
     }
 
     /**
      * Invoked when a test succeeds
      */
-    protected void succeeded(Description description) { }
+    protected void succeeded(Description description) {
+    }
 
     /**
      * Invoked when a test fails
      */
-    protected void failed(Throwable e, Description description) { }
+    protected void failed(Throwable e, Description description) {
+    }
 
     /**
      * Invoked when a test is skipped due to a failed assumption.
      */
     protected void skipped(AssumptionViolatedException e, Description description) {
-        // For backwards compatibility with JUnit 4.11 and earlier, call the legacy version
-        
     }
 
     /**
@@ -105,15 +146,18 @@ public abstract class TestWatcher implements TestRule {
      */
     @Deprecated
     protected void skipped(
-            org.junit.internal.AssumptionViolatedException e, Description description) { }
+            org.junit.internal.AssumptionViolatedException e, Description description) {
+    }
 
     /**
      * Invoked when a test is about to start
      */
-    protected void starting(Description description) { }
+    protected void starting(Description description) {
+    }
 
     /**
      * Invoked when a test method finishes (whether passing or failing)
      */
-    protected void finished(Description description) { }
+    protected void finished(Description description) {
+    }
 }

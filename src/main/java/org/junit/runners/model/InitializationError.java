@@ -23,11 +23,11 @@ public class InitializationError extends Exception {
      * errors {@code errors} as causes
      */
     public InitializationError(List<Throwable> errors) {
-        
+        this.fErrors = errors;
     }
 
     public InitializationError(Throwable error) {
-        
+        this(Arrays.asList(error));
     }
 
     /**
@@ -35,13 +35,13 @@ public class InitializationError extends Exception {
      * with message {@code string}
      */
     public InitializationError(String string) {
-        
+        this(new Exception(string));
     }
 
     /**
      * Returns one or more Throwables that led to this initialization error.
      */
     public List<Throwable> getCauses() {
-        
+        return fErrors;
     }
 }

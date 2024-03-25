@@ -26,14 +26,20 @@ public class RunNotifier {
      * Internal use only
      */
     public void addListener(RunListener listener) {
-        
+        if (listener == null) {
+            throw new NullPointerException("Cannot add a null listener");
+        }
+        listeners.add(wrapIfNotThreadSafe(listener));
     }
 
     /**
      * Internal use only
      */
     public void removeListener(RunListener listener) {
-        
+        if (listener == null) {
+            throw new NullPointerException("Cannot remove a null listener");
+        }
+        listeners.remove(wrapIfNotThreadSafe(listener));
     }
 
     /**
@@ -41,7 +47,8 @@ public class RunNotifier {
      * it is not annotated with {@link RunListener.ThreadSafe}.
      */
     RunListener wrapIfNotThreadSafe(RunListener listener) {
-        
+        return listener.getClass().isAnnotationPresent(RunListener.ThreadSafe.class) ?
+        listener : new SynchronizedRunListener(listener, RunNotifier.this);
     }
 
 
@@ -49,15 +56,17 @@ public class RunNotifier {
         private final List<RunListener> currentListeners;
 
         SafeNotifier() {
-            
+            this(new ArrayList<RunListener>());
         }
 
         SafeNotifier(List<RunListener> currentListeners) {
-            
+            this.currentListeners = currentListeners;
         }
 
         void run() {
-            
+            for (RunListener each : currentListeners) {
+                notifyListener(each);
+            }
         }
 
         protected abstract void notifyListener(RunListener each) throws Exception;
@@ -67,14 +76,24 @@ public class RunNotifier {
      * Do not invoke.
      */
     public void fireTestRunStarted(final Description description) {
-        
+        new SafeNotifier() {
+            @Override
+            protected void notifyListener(RunListener each) throws Exception {
+                each.testRunStarted(description);
+            }
+        }.run();
     }
 
     /**
      * Do not invoke.
      */
     public void fireTestRunFinished(final Result result) {
-        
+        new SafeNotifier() {
+            @Override
+            protected void notifyListener(RunListener each) throws Exception {
+                each.testRunFinished(result);
+            }
+        }.run();
     }
 
     /**
@@ -87,7 +106,12 @@ public class RunNotifier {
      * @since 4.13
      */
     public void fireTestSuiteStarted(final Description description) {
-        
+        new SafeNotifier() {
+            @Override
+            protected void notifyListener(RunListener each) throws Exception {
+                each.testSuiteStarted(description);
+            }
+        }.run();
     }
 
     /**
@@ -99,7 +123,12 @@ public class RunNotifier {
      * @since 4.13
      */
     public void fireTestSuiteFinished(final Description description) {
-        
+        new SafeNotifier() {
+            @Override
+            protected void notifyListener(RunListener each) throws Exception {
+                each.testSuiteFinished(description);
+            }
+        }.run();
     }
 
     /**
@@ -109,7 +138,15 @@ public class RunNotifier {
      * @throws StoppedByUserException thrown if a user has requested that the test run stop
      */
     public void fireTestStarted(final Description description) throws StoppedByUserException {
-        
+        if (pleaseStop) {
+            throw new StoppedByUserException();
+        }
+        new SafeNotifier() {
+            @Override
+            protected void notifyListener(RunListener each) throws Exception {
+                each.testStarted(description);
+            }
+        }.run();
     }
 
     /**
@@ -118,12 +155,19 @@ public class RunNotifier {
      * @param failure the description of the test that failed and the exception thrown
      */
     public void fireTestFailure(Failure failure) {
-        
+        fireTestFailures(listeners, asList(failure));
     }
 
     private void fireTestFailures(List<RunListener> listeners,
             final List<Failure> failures) {
-        
+        if (!failures.isEmpty()) {
+            new SafeNotifier(listeners) {
+                @Override
+                protected void notifyListener(RunListener each) throws Exception {
+                    each.testFailures(failures);
+                }
+            }.run();
+        }
     }
 
     /**
@@ -134,7 +178,12 @@ public class RunNotifier {
      * {@link org.junit.AssumptionViolatedException} thrown
      */
     public void fireTestAssumptionFailed(final Failure failure) {
-        
+        new SafeNotifier() {
+            @Override
+            protected void notifyListener(RunListener each) throws Exception {
+                each.testAssumptionFailure(failure);
+            }
+        }.run();
     }
 
     /**
@@ -143,7 +192,12 @@ public class RunNotifier {
      * @param description the description of the ignored test
      */
     public void fireTestIgnored(final Description description) {
-        
+        new SafeNotifier() {
+            @Override
+            protected void notifyListener(RunListener each) throws Exception {
+                each.testIgnored(description);
+            }
+        }.run();
     }
 
     /**
@@ -154,7 +208,12 @@ public class RunNotifier {
      * @param description the description of the test that finished
      */
     public void fireTestFinished(final Description description) {
-        
+        new SafeNotifier() {
+            @Override
+            protected void notifyListener(RunListener each) throws Exception {
+                each.testFinished(description);
+            }
+        }.run();
     }
 
     /**
@@ -164,13 +223,16 @@ public class RunNotifier {
      * to be shared amongst the many runners involved.
      */
     public void pleaseStop() {
-        
+        pleaseStop = true;
     }
 
     /**
      * Internal use only. The Result's listener must be first.
      */
     public void addFirstListener(RunListener listener) {
-        
+        if (listener == null) {
+            throw new NullPointerException("Cannot add a null listener");
+        }
+        listeners.add(0, wrapIfNotThreadSafe(listener));
     }
 }

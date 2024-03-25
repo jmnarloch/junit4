@@ -120,14 +120,15 @@ public class ExpectedException implements TestRule {
      */
     @Deprecated
     public static ExpectedException none() {
-        
+        return new ExpectedException();
     }
 
     private final ExpectedExceptionMatcherBuilder matcherBuilder = new ExpectedExceptionMatcherBuilder();
 
     private String missingExceptionMessage= "Expected test to throw %s";
 
-    private ExpectedException() { }
+    private ExpectedException() {
+    }
 
     /**
      * This method does nothing. Don't use it.
@@ -136,7 +137,7 @@ public class ExpectedException implements TestRule {
      */
     @Deprecated
     public ExpectedException handleAssertionErrors() {
-        
+        return this;
     }
 
     /**
@@ -146,7 +147,7 @@ public class ExpectedException implements TestRule {
      */
     @Deprecated
     public ExpectedException handleAssumptionViolatedExceptions() {
-        
+        return this;
     }
 
     /**
@@ -160,12 +161,13 @@ public class ExpectedException implements TestRule {
      * @return the rule itself
      */
     public ExpectedException reportMissingExceptionWithMessage(String message) {
-        
+        missingExceptionMessage = message;
+        return this;
     }
 
     public Statement apply(Statement base,
             org.junit.runner.Description description) {
-        
+        return new ExpectedExceptionStatement(base);
     }
 
     /**
@@ -179,7 +181,7 @@ public class ExpectedException implements TestRule {
      * }</pre>
      */
     public void expect(Matcher<?> matcher) {
-        
+        matcherBuilder.add(matcher);
     }
 
     /**
@@ -192,7 +194,7 @@ public class ExpectedException implements TestRule {
      * }</pre>
      */
     public void expect(Class<? extends Throwable> type) {
-        
+        expect(instanceOf(type));
     }
 
     /**
@@ -205,7 +207,7 @@ public class ExpectedException implements TestRule {
      * }</pre>
      */
     public void expectMessage(String substring) {
-        
+        expectMessage(containsString(substring));
     }
 
     /**
@@ -218,7 +220,7 @@ public class ExpectedException implements TestRule {
      * }</pre>
      */
     public void expectMessage(Matcher<String> matcher) {
-        
+        expect(hasMessage(matcher));
     }
 
     /**
@@ -232,7 +234,7 @@ public class ExpectedException implements TestRule {
      * }</pre>
      */
     public void expectCause(Matcher<?> expectedCause) {
-        
+        expect(hasCause(expectedCause));
     }
 
     /**
@@ -240,31 +242,43 @@ public class ExpectedException implements TestRule {
      * @since 4.13
      */
     public final boolean isAnyExceptionExpected() {
-        
+        return matcherBuilder.expectsThrowable();
     }
 
     private class ExpectedExceptionStatement extends Statement {
         private final Statement next;
 
         public ExpectedExceptionStatement(Statement base) {
-            
+            next = base;
         }
 
         @Override
         public void evaluate() throws Throwable {
-            
+            try {
+                next.evaluate();
+            } catch (AssumptionViolatedException e) {
+                // AssumptionViolatedException is handled by the runner itself
+                throw e;
+            } catch (Throwable e) {
+                handleException(e);
+            }
         }
     }
 
     private void handleException(Throwable e) throws Throwable {
-        
+        if (isAnyExceptionExpected()) {
+            MatcherAssert.assertThat(e, matcherBuilder.build());
+        } else {
+            throw e;
+        }
     }
 
     private void failDueToMissingException() throws AssertionError {
-        
+        fail(missingExceptionMessage());
     }
     
     private String missingExceptionMessage() {
-        
+        String expectation= StringDescription.toString(matcherBuilder.build());
+        return format(missingExceptionMessage, expectation);
     }
 }

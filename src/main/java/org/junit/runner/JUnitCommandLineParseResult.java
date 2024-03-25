@@ -17,20 +17,21 @@ class JUnitCommandLineParseResult {
     /**
      * Do not use. Testing purposes only.
      */
-    JUnitCommandLineParseResult() { }
+    JUnitCommandLineParseResult() {
+    }
 
     /**
      * Returns filter specs parsed from command line.
      */
     public List<String> getFilterSpecs() {
-        
+        return Collections.unmodifiableList(filterSpecs);
     }
 
     /**
      * Returns test classes parsed from command line.
      */
     public List<Class<?>> getClasses() {
-        
+        return Collections.unmodifiableList(classes);
     }
 
     /**
@@ -39,27 +40,58 @@ class JUnitCommandLineParseResult {
      * @param args Arguments
      */
     public static JUnitCommandLineParseResult parse(String[] args) {
+        JUnitCommandLineParseResult result = new JUnitCommandLineParseResult();
         
+        result.parseArgs(args);
+        
+        return result;
     }
 
     private void parseArgs(String[] args) {
-        
+        parseParameters(parseOptions(args));
     }
 
     String[] parseOptions(String... args) {
+        for (int i = 0; i != args.length; ++i) {
+            String arg = args[i];
+            
+            if (arg.equals("--")) {
+                return copyArray(args, i + 1, args.length);
+            } else if (arg.startsWith("--")) {
+                if (arg.startsWith("--filter=") || arg.equals("--filter")) {
+                    String filterSpec = arg.substring(arg.indexOf('=') + 1);
+                    filterSpecs.add(filterSpec);
+                } else {
+                    parserErrors.add(new IllegalArgumentException(String.format("'%s' is not a recognized option", arg)));
+                }
+            } else {
+                return copyArray(args, i, args.length);
+            }
+        }
         
+        return args;
     }
 
     private String[] copyArray(String[] args, int from, int to) {
-        
+        String[] result = new String[to - from];
+        for (int j = from; j != to; ++j) {
+            result[j - from] = args[j];
+        }
+        return result;
     }
 
     void parseParameters(String[] args) {
-        
+        for (String parameter : parseOptions(args)) {
+            try {
+                classes.add(Classes.getClass(parameter));
+            } catch (ClassNotFoundException e) {
+                parserErrors.add(new IllegalArgumentException("Could not find class: " + parameter));
+            }
+        }
     }
 
     private Request errorReport(Throwable cause) {
-        
+        return Request.errorReport(JUnitCommandLineParseResult.class, cause);
     }
 
     /**
@@ -68,11 +100,24 @@ class JUnitCommandLineParseResult {
      * @param computer {@link Computer} to be used.
      */
     public Request createRequest(Computer computer) {
-        
+        if (parserErrors.isEmpty()) {
+            Request request = Request.classes(
+            computer, classes.toArray(new Class<?>[classes.size()]));
+            return applyFilterSpecs(request);
+        } else {
+            return helpRequest();
+        }
     }
 
     private Request applyFilterSpecs(Request request) {
-        
+        try {
+            for (String filterSpec : filterSpecs) {
+                request = request.filter(new FilterFactory(filterSpec).createFilter());
+            }
+            return request;
+        } catch (FilterNotCreatedException e) {
+            return errorReport(e);
+        }
     }
 
     /**
@@ -82,7 +127,7 @@ class JUnitCommandLineParseResult {
         private static final long serialVersionUID= 1L;
 
         public CommandLineParserError(String message) {
-            
+            super(message);
         }
     }
 }

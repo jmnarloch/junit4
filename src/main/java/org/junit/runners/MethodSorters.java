@@ -32,10 +32,10 @@ public enum MethodSorters {
     private final Comparator<Method> comparator;
 
     private MethodSorters(Comparator<Method> comparator) {
-        
+        this.comparator = comparator;
     }
 
     public Comparator<Method> getComparator() {
-        
+        return comparator;
     }
 }

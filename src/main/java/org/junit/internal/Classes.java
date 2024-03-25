@@ -12,7 +12,8 @@ public class Classes {
      * @deprecated will be private soon.
      */
     @Deprecated
-    public Classes() { }
+    public Classes() {
+    }
 
     /**
      * Returns Class.forName for {@code className} using the current thread's class loader.
@@ -22,7 +23,7 @@ public class Classes {
      * @param className Name of the class.
      */
     public static Class<?> getClass(String className) throws ClassNotFoundException {
-        
+        return getClass(className, Classes.class);
     }
 
     /**
@@ -35,6 +36,7 @@ public class Classes {
      * @since 4.13
      */
     public static Class<?> getClass(String className, Class<?> callingClass) throws ClassNotFoundException {
-        
+        ClassLoader classLoader = currentThread().getContextClassLoader();
+        return Class.forName(className, true, classLoader == null ? callingClass.getClassLoader() : classLoader);
     }
 }

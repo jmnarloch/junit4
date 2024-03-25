@@ -38,22 +38,49 @@ final class ReflectiveThreadMXBean implements ThreadMXBean {
   }
 
   ReflectiveThreadMXBean(Object threadMxBean) {
-    
-  }
+        super();
+        this.threadMxBean = threadMxBean;
+    }
 
   /**
    * {@inheritDoc}
    */
   public long getThreadCpuTime(long id) {
-    
-  }
+        if (Holder.getThreadCpuTimeMethod != null) {
+            try {
+                return (Long) Holder.getThreadCpuTimeMethod.invoke(threadMxBean, id);
+            } catch (ClassCastException e) {
+                // fallthrough
+            } catch (IllegalAccessException e) {
+                // fallthrough
+            } catch (IllegalArgumentException e) {
+                // fallthrough
+            } catch (InvocationTargetException e) {
+                // fallthrough
+            }
+        }
+        throw new UnsupportedOperationException(Holder.FAILURE_MESSAGE);
+    }
 
   /**
    * {@inheritDoc}
    */
   public boolean isThreadCpuTimeSupported() {
-    
-  }
+        if (Holder.isThreadCpuTimeSupportedMethod != null) {
+            try {
+                return (Boolean) Holder.isThreadCpuTimeSupportedMethod.invoke(threadMxBean);
+            } catch (ClassCastException e) {
+                // fallthrough
+            } catch (IllegalAccessException e) {
+                // fallthrough
+            } catch (IllegalArgumentException e) {
+                // fallthrough
+            } catch (InvocationTargetException e) {
+                // fallthrough
+            }
+        }
+        return false;
+    }
 
 }
 

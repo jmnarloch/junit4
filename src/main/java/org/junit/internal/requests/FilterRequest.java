@@ -26,11 +26,14 @@ public final class FilterRequest extends Request {
      * <code>request</code>
      */
     public FilterRequest(Request request, Filter filter) {
-        
+        this.request = request;
+        this.fFilter = filter;
     }
 
     @Override
     public Runner getRunner() {
-        
+        Runner runner = request.getRunner();
+        fFilter.apply(runner);
+        return runner;
     }
 }

@@ -39,14 +39,17 @@ public class ErrorCollector extends Verifier {
 
     @Override
     protected void verify() throws Throwable {
-        
+        MultipleFailureException.assertEmpty(errors);
     }
 
     /**
      * Adds a Throwable to the table.  Execution continues, but the test will fail at the end.
      */
     public void addError(Throwable error) {
-        
+        if (error == null) {
+            throw new NullPointerException("Error may not be null");
+        }
+        errors.add(error);
     }
 
     /**
@@ -54,7 +57,7 @@ public class ErrorCollector extends Verifier {
      * Execution continues, but the test will fail at the end if the match fails.
      */
     public <T> void checkThat(final T value, final Matcher<T> matcher) {
-        
+        checkThat("", value, matcher);
     }
 
     /**
@@ -63,7 +66,12 @@ public class ErrorCollector extends Verifier {
      * Execution continues, but the test will fail at the end if the match fails.
      */
     public <T> void checkThat(final String reason, final T value, final Matcher<T> matcher) {
-        
+        checkSucceeds(new Callable<Object>() {
+            public Object call() throws Exception {
+                MatcherAssert.assertThat(reason, value, matcher);
+                return value;
+            }
+        });
     }
 
     /**
@@ -72,7 +80,15 @@ public class ErrorCollector extends Verifier {
      * {@code callable} threw an exception.
      */
     public <T> T checkSucceeds(Callable<T> callable) {
-        
+        try {
+            return callable.call();
+        } catch (AssumptionViolatedException e) {
+            addError(e);
+            return null;
+        } catch (Throwable e) {
+            addError(e);
+            return null;
+        }
     }
 
     /**
@@ -86,7 +102,11 @@ public class ErrorCollector extends Verifier {
      * @since 4.13
      */
     public void checkThrows(Class<? extends Throwable> expectedThrowable, ThrowingRunnable runnable) {
-        
+        try {
+            assertThrows(expectedThrowable, runnable);
+        } catch (AssertionError e) {
+            addError(e);
+        }
     }
 
 }

@@ -33,7 +33,10 @@ public class AssumptionViolatedException extends RuntimeException implements Sel
      */
     @Deprecated
     public AssumptionViolatedException(String assumption, boolean hasValue, Object value, Matcher<?> matcher) {
-        
+        this.fAssumption = assumption;
+        this.fValue = value;
+        this.fMatcher = matcher;
+        this.fValueMatcher = hasValue;
     }
 
     /**
@@ -44,7 +47,7 @@ public class AssumptionViolatedException extends RuntimeException implements Sel
      */
     @Deprecated
     public AssumptionViolatedException(Object value, Matcher<?> matcher) {
-        
+        this(null, true, value, matcher);
     }
 
     /**
@@ -55,7 +58,7 @@ public class AssumptionViolatedException extends RuntimeException implements Sel
      */
     @Deprecated
     public AssumptionViolatedException(String assumption, Object value, Matcher<?> matcher) {
-        
+        this(assumption, true, value, matcher);
     }
 
     /**
@@ -65,7 +68,7 @@ public class AssumptionViolatedException extends RuntimeException implements Sel
      */
     @Deprecated
     public AssumptionViolatedException(String assumption) {
-        
+        this(assumption, false, null, null);
     }
 
     /**
@@ -75,16 +78,26 @@ public class AssumptionViolatedException extends RuntimeException implements Sel
      */
     @Deprecated
     public AssumptionViolatedException(String assumption, Throwable e) {
-        
+        this(assumption, false, null, null);
+        initCause(e);
     }
 
     @Override
     public String getMessage() {
-        
+        return StringDescription.asString(this);
     }
 
     public void describeTo(Description description) {
-        
+        if (fAssumption != null) {
+            description.appendText(fAssumption);
+        }
+        if (fValueMatcher) {
+            description.appendValue(fValue);
+            if (fMatcher != null) {
+                description.appendText(" ");
+                fMatcher.describeTo(description);
+            }
+        }
     }
 
     /**
@@ -96,6 +109,7 @@ public class AssumptionViolatedException extends RuntimeException implements Sel
      * @throws IOException When serialization fails
      */
     private void writeObject(ObjectOutputStream objectOutputStream) throws IOException {
-        
+        ObjectOutputStream str = new ObjectOutputStream(objectOutputStream);
+        str.writeUTF(toString());
     }
 }

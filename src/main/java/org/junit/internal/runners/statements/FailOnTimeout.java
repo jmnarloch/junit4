@@ -28,7 +28,7 @@ public class FailOnTimeout extends Statement {
      * @since 4.12
      */
     public static Builder builder() {
-        
+        return new Builder();
     }
 
     /**
@@ -40,11 +40,14 @@ public class FailOnTimeout extends Statement {
      */
     @Deprecated
     public FailOnTimeout(Statement statement, long timeoutMillis) {
-        
+        this(builder().withTimeout(timeoutMillis, TimeUnit.MILLISECONDS), statement);
     }
 
     private FailOnTimeout(Builder builder, Statement statement) {
-        
+        originalStatement = statement;
+        timeout = builder.timeout;
+        timeUnit = builder.unit;
+        lookForStuckThread = builder.lookForStuckThread;
     }
 
     /**
@@ -73,7 +76,9 @@ public class FailOnTimeout extends Statement {
          * @return {@code this} for method chaining.
          */
         public Builder withTimeout(long timeout, TimeUnit unit) {
-            
+            this.timeout = timeout;
+            this.unit = unit;
+            return this;
         }
 
         /**
@@ -86,7 +91,8 @@ public class FailOnTimeout extends Statement {
          * @return {@code this} for method chaining.
          */
         public Builder withLookingForStuckThread(boolean enable) {
-            
+            this.lookForStuckThread = enable;
+            return this;
         }
 
         /**
@@ -96,17 +102,34 @@ public class FailOnTimeout extends Statement {
          * @param statement statement to build
          */
         public FailOnTimeout build(Statement statement) {
-            
+            return new FailOnTimeout(this, statement);
         }
     }
 
     @Override
     public void evaluate() throws Throwable {
-        
+        CallableStatement callable = new CallableStatement();
+        FutureTask<Throwable> task = new FutureTask<Throwable>(callable);
+        ThreadGroup threadGroup = threadGroupForNewThread();
+        Thread thread = new Thread(threadGroup, task, "Time-limited test");
+        thread.setDaemon(true);
+        thread.start();
+        callable.awaitStarted();
+        Throwable throwable = getResult(task, thread);
+        if (throwable != null) {
+            throw throwable;
+        }
     }
 
     private ThreadGroup threadGroupForNewThread() {
+        if (!lookForStuckThread) {
+            return ManagementFactory.getThreadMXBean().getThreadInfo(
+            Thread.currentThread().getId()).getThreadName().contains("Surefire")
+            ? ManagementFactory.getThreadMXBean().getThreadInfo(
+            Thread.currentThread().getId()).getThreadGroup() : null;
+        }
         
+        return null;
     }
 
     /**
@@ -115,11 +138,26 @@ public class FailOnTimeout extends Statement {
      * {@code null} if the test passed.
      */
     private Throwable getResult(FutureTask<Throwable> task, Thread thread) {
-        
+        try {
+            if (timeout > 0) {
+                return task.get(timeout, timeUnit);
+            } else {
+                return task.get();
+            }
+        } catch (InterruptedException e) {
+            return e; // caller will re-throw; no need to call Thread.interrupt()
+        } catch (ExecutionException e) {
+            // test failed; have caller re-throw the exception thrown by the test
+            e.fillInStackTrace();
+            return e;
+        } catch (TimeoutException e) {
+            return createTimeoutException(thread);
+        }
     }
 
     private Exception createTimeoutException(Thread thread) {
-        
+        final StackTraceElement[] stackTrace = thread.getStackTrace();
+        return new TestTimedOutException(timeout, timeUnit, stackTrace);
     }
 
     /**
@@ -129,7 +167,11 @@ public class FailOnTimeout extends Statement {
      * terminated or the stack cannot be retrieved for some other reason.
      */
     private StackTraceElement[] getStackTrace(Thread thread) {
-        
+        try {
+            return thread.getStackTrace();
+        } catch (SecurityException e) {
+            return new StackTraceElement[0];
+        }
     }
 
     /**
@@ -143,7 +185,43 @@ public class FailOnTimeout extends Statement {
      * to {@code mainThread}.
      */
     private Thread getStuckThread(Thread mainThread) {
+        if (!lookForStuckThread) {
+            return null;
+        }
         
+        long maxCpuTime = 0;
+        Thread stuckThread = null;
+        
+        ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
+        if (!mxBean.isThreadCpuTimeSupported()) {
+            return null;
+        }
+        for (Thread thread : getThreadsInGroup(mainThread.getThreadGroup())) {
+            if (thread.getState() != Thread.State.TERMINATED) {
+                // Poll two more times to work around a bug in Sun's
+                // JRockit JVM, where calling getThreadCpuTime has a side
+                // effect of updating the values returned by
+                // getThreadAllocatedBytes, getThreadAllocatedBytes(long)
+                // and isThreadCpuTimeSupported.
+                //
+                // See http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6440520
+                //
+                // This workaround is only enabled on JRockit JVM
+                // (through a system property) as it has a performance
+                // penalty on some JVMs.
+                long threadCpuTime = getCpuTime(thread);
+                if (threadCpuTime > maxCpuTime) {
+                    maxCpuTime = threadCpuTime;
+                    stuckThread = thread;
+                }
+            }
+        }
+        
+        if (stuckThread != null && maxCpuTime > unit.toNanos(timeout)) {
+            return stuckThread;
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -155,7 +233,16 @@ public class FailOnTimeout extends Statement {
      * extremely fast rate.
      */
     private List<Thread> getThreadsInGroup(ThreadGroup group) {
+        Thread[] threads = new Thread[group.activeCount() * 2];
+        int numThreads = group.enumerate(threads, false);
         
+        List<Thread> result = new java.util.ArrayList<Thread>(numThreads);
+        for (Thread thread : threads) {
+            if (thread != null) {
+                result.add(thread);
+            }
+        }
+        return result;
     }
 
     /**
@@ -164,18 +251,45 @@ public class FailOnTimeout extends Statement {
      * @return The CPU time used by {@code thr}, or 0 if it cannot be determined.
      */
     private long cpuTime(Thread thr) {
-        
+        ThreadMXBean mxBean = ManagementFactory.getThreadMXBean();
+        if (mxBean.isThreadCpuTimeSupported()) {
+            try {
+                return mxBean.getThreadCpuTime(thr.getId());
+            } catch (UnsupportedOperationException e) {
+            }
+        }
+        return 0;
     }
 
     private class CallableStatement implements Callable<Throwable> {
         private final CountDownLatch startLatch = new CountDownLatch(1);
 
         public Throwable call() throws Exception {
-            
+            awaitStarted();
+            try {
+                final FutureTask<Throwable> task = new FutureTask<Throwable>(
+                new Callable<Throwable>() {
+                    public Throwable call() throws Exception {
+                        try {
+                            return null;
+                        } finally {
+                            // notify that the test is done
+                            startLatch.countDown();
+                        }
+                    }
+                });
+                Thread taskThread = new Thread(threadGroupForNewThread(), task,
+                "Time-limited test");
+                taskThread.setDaemon(true);
+                taskThread.start();
+                return getResult(task, taskThread);
+            } catch (Exception e) {
+                return e;
+            }
         }
 
         public void awaitStarted() throws InterruptedException {
-            
+            startLatch.await();
         }
     }
 }

@@ -19,7 +19,8 @@ class FilterFactories {
      */
     public static Filter createFilterFromFilterSpec(Request request, String filterSpec)
             throws FilterFactory.FilterNotCreatedException {
-        
+        Description description = request.getRunner().getDescription();
+        return createFilter(filterSpec, new FilterFactoryParams(description, request.getRunner().getRunnerService()));
     }
 
     /**
@@ -30,7 +31,9 @@ class FilterFactories {
      */
     public static Filter createFilter(String filterFactoryFqcn, FilterFactoryParams params)
             throws FilterFactory.FilterNotCreatedException {
+        FilterFactory filterFactory = createFilterFactory(filterFactoryFqcn);
         
+        return filterFactory.createFilter(params);
     }
 
     /**
@@ -42,15 +45,29 @@ class FilterFactories {
      */
     public static Filter createFilter(Class<? extends FilterFactory> filterFactoryClass, FilterFactoryParams params)
             throws FilterFactory.FilterNotCreatedException {
+        FilterFactory filterFactory = createFilterFactory(filterFactoryClass);
         
+        return filterFactory.createFilter(params);
     }
 
     static FilterFactory createFilterFactory(String filterFactoryFqcn) throws FilterNotCreatedException {
+        Class<? extends FilterFactory> filterFactoryClass;
         
+        try {
+            filterFactoryClass = Classes.getClass(filterFactoryFqcn).asSubclass(FilterFactory.class);
+        } catch (Exception e) {
+            throw new FilterNotCreatedException(e);
+        }
+        
+        return createFilterFactory(filterFactoryClass);
     }
 
     static FilterFactory createFilterFactory(Class<? extends FilterFactory> filterFactoryClass)
             throws FilterNotCreatedException {
-        
+        try {
+            return filterFactoryClass.getConstructor().newInstance();
+        } catch (Exception e) {
+            throw new FilterNotCreatedException(e);
+        }
     }
 }

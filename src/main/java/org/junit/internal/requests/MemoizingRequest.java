@@ -12,7 +12,17 @@ abstract class MemoizingRequest extends Request {
 
     @Override
     public final Runner getRunner() {
-        
+        if (runner == null) {
+            runnerLock.lock();
+            try {
+                if (runner == null) {
+                    runner = createRunner();
+                }
+            } finally {
+                runnerLock.unlock();
+            }
+        }
+        return runner;
     }
 
     /** Creates the {@link Runner} to return from {@link #getRunner()}. Called at most once. */

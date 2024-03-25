@@ -19,7 +19,11 @@ abstract class CategoryFilterFactory implements FilterFactory {
      * @param params Parameters needed to create the {@link Filter}
      */
     public Filter createFilter(FilterFactoryParams params) throws FilterNotCreatedException {
-        
+        try {
+            return createFilter(parseCategories(params.getArgs()));
+        } catch (ClassNotFoundException e) {
+            throw new FilterNotCreatedException(e);
+        }
     }
 
     /**
@@ -30,6 +34,12 @@ abstract class CategoryFilterFactory implements FilterFactory {
     protected abstract Filter createFilter(List<Class<?>> categories);
 
     private List<Class<?>> parseCategories(String categories) throws ClassNotFoundException {
-        
+        List<Class<?>> categoryClasses = new ArrayList<Class<?>>();
+        for (String category : categories.split(",")) {
+            if (category.length() > 0) {
+                categoryClasses.add(Classes.getClass(category));
+            }
+        }
+        return categoryClasses;
     }
 }

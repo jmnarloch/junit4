@@ -26,32 +26,32 @@ public class PrintableResult {
      * The result of running JUnit on {@code type}
      */
     public static PrintableResult testResult(Class<?> type) {
-        
+        return testResult(Request.aClass(type));
     }
 
     /**
      * The result of running JUnit on Request {@code request}
      */
     public static PrintableResult testResult(Request request) {
-        
+        return new PrintableResult(new JUnitCore().run(request));
     }
 
     /**
      * A result that includes the given {@code failures}
      */
     public PrintableResult(List<Failure> failures) {
-        
+        this(new FailureList(failures).result());
     }
 
     private PrintableResult(Result result) {
-        
+        this.result = result;
     }
 
     /**
      * Returns the number of failures in this result.
      */
     public int failureCount() {
-        
+        return result.getFailures().size();
     }
 
     /**
@@ -60,11 +60,13 @@ public class PrintableResult {
      * @since 4.13
      */
     public List<Failure> failures() {
-        
+        return result.getFailures();
     }
 
     @Override
     public String toString() {
-        
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        new TextListener(new PrintStream(stream)).testRunFinished(result);
+        return stream.toString();
     }
 }

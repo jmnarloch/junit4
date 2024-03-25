@@ -29,7 +29,19 @@ public abstract class Ordering {
      * {@link Random} instance.
      */
     public static Ordering shuffledBy(final Random random) {
-        
+        return new Ordering() {
+            @Override
+            boolean validateOrderingIsCorrect() {
+                return false;
+            }
+            
+            @Override
+            protected List<Description> orderItems(Collection<Description> descriptions) {
+                List<Description> list = new ArrayList<Description>(descriptions);
+                Collections.shuffle(list, random);
+                return list;
+            }
+        };
     }
 
     /**
@@ -43,7 +55,28 @@ public abstract class Ordering {
     public static Ordering definedBy(
             Class<? extends Ordering.Factory> factoryClass, Description annotatedTestClass)
             throws InvalidOrderingException {
+        if (factoryClass == null) {
+            throw new NullPointerException("factoryClass cannot be null");
+        }
+        if (annotatedTestClass == null) {
+            throw new NullPointerException("annotatedTestClass cannot be null");
+        }
         
+        Ordering.Factory factory;
+        try {
+            Constructor<? extends Ordering.Factory> constructor = factoryClass.getConstructor();
+            factory = constructor.newInstance();
+        } catch (NoSuchMethodException e) {
+            String className = getClassName(factoryClass);
+            throw new InvalidOrderingException(
+            String.format(CONSTRUCTOR_ERROR_FORMAT, className, className));
+        } catch (Exception e) {
+            String className = getClassName(factoryClass);
+            throw new InvalidOrderingException(
+            String.format(CONSTRUCTOR_ERROR_FORMAT, className, className), e);
+        }
+        
+        return definedBy(factory, annotatedTestClass);
     }
 
     /**
@@ -56,11 +89,19 @@ public abstract class Ordering {
     public static Ordering definedBy(
             Ordering.Factory factory, Description annotatedTestClass)
             throws InvalidOrderingException {
-        
+        if (factory == null) {
+            throw new InvalidOrderingException(
+            "Passed in Factory to create Ordering can not be null");
+        }
+        return factory.create(new Ordering.Context(annotatedTestClass));
     }
 
     private static String getClassName(Class<?> clazz) {
-        
+        String name = clazz.getCanonicalName();
+        if (name == null) {
+            return clazz.getName();
+        }
+        return name;
     }
 
     /**
@@ -70,19 +111,19 @@ public abstract class Ordering {
      * children)
      */
     public void apply(Object target) throws InvalidOrderingException {
-        /*
-         * Note that some subclasses of Ordering override apply(). The Sorter
-         * subclass of Ordering overrides apply() to apply the sort (this is
-         * done because sorting is more efficient than ordering).
-         */
-        
+        if (target instanceof Orderable) {
+            Orderable orderable = (Orderable) target;
+            orderable.order(new Orderer(this));
+        }
     }
 
     /**
      * Returns {@code true} if this ordering could produce invalid results (i.e.
      * if it could add or remove values).
      */
-    boolean validateOrderingIsCorrect() { }
+    boolean validateOrderingIsCorrect() {
+        return true;
+    }
 
     /**
      * Implemented by sub-classes to order the descriptions.
@@ -99,11 +140,11 @@ public abstract class Ordering {
          * Gets the description for the top-level target being ordered.
          */
         public Description getTarget() {
-            
+            return description;
         }
 
         private Context(Description description) {
-            
+            this.description = description;
         }
     }
 

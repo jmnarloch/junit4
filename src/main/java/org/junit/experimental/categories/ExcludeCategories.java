@@ -32,21 +32,21 @@ public final class ExcludeCategories extends CategoryFilterFactory {
      */
     @Override
     protected Filter createFilter(List<Class<?>> categories) {
-        
+        return new ExcludesAny(categories);
     }
 
     private static class ExcludesAny extends CategoryFilter {
         public ExcludesAny(List<Class<?>> categories) {
-            
+            this(new HashSet<Class<?>>(categories));
         }
 
         public ExcludesAny(Set<Class<?>> categories) {
-            
+            super(true, categories);
         }
 
         @Override
         public String describe() {
-            
+            return "excludes " + super.describe();
         }
     }
 }

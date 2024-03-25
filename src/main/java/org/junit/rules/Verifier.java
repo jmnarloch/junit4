@@ -29,12 +29,19 @@ import org.junit.runners.model.Statement;
  */
 public abstract class Verifier implements TestRule {
     public Statement apply(final Statement base, Description description) {
-        
+        return new Statement() {
+            @Override
+            public void evaluate() throws Throwable {
+                base.evaluate();
+                verify();
+            }
+        };
     }
 
     /**
      * Override this to add verification logic. Overrides should throw an
      * exception to indicate that verification failed.
      */
-    protected void verify() throws Throwable { }
+    protected void verify() throws Throwable {
+    }
 }
